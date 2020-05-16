@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane maxHeight="Infinity" maxWidth="Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="quan.test.roster.RosterController">
+    <center>
+        <TableView fx:id="tableView" editable="true" prefHeight="507.0" prefWidth="821.0" style="-fx-background-color: transparent;" BorderPane.alignment="CENTER">
+            <columns>
+                <TableColumn prefWidth="75.0" text="ID" />
+                <TableColumn prefWidth="130.0" text="名字" />
+                <TableColumn prefWidth="75.0" text="电话" />
+                <TableColumn prefWidth="75.0" text="地址" />
+            </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
+            <BorderPane.margin>
+                <Insets bottom="-1.0" left="-1.0" right="-1.0" top="-1.0" />
+            </BorderPane.margin>
+        </TableView>
+    </center>
+    <bottom>
+        <Pagination fx:id="pagination" pageCount="200" pickOnBounds="false" prefHeight="65.0" prefWidth="821.0" style="-fx-max-page-indicator-count: 20; -fx-page-information-visible:false" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets bottom="10.0" />
+            </padding>
+        </Pagination>
+    </bottom>
+    <top>
+        <MenuBar BorderPane.alignment="CENTER">
+            <Menu mnemonicParsing="false" onAction="#onFileAction" text="文件">
+                <MenuItem mnemonicParsing="false" text="打开" />
+                <MenuItem mnemonicParsing="false" text="保存" />
+            </Menu>
+            <Menu mnemonicParsing="false" onAction="#onEditAction" text="编辑">
+                <MenuItem mnemonicParsing="false" text="复制" />
+                <MenuItem mnemonicParsing="false" text="剪切" />
+                <MenuItem mnemonicParsing="false" text="粘贴" />
+            </Menu>
+            <Menu mnemonicParsing="false" onAction="#onHelpAction" text="帮助">
+                <MenuItem mnemonicParsing="false" text="关于" />
+            </Menu>
+        </MenuBar>
+    </top>
+   <opaqueInsets>
+      <Insets top="100.0" />
+   </opaqueInsets>
+</BorderPane>
