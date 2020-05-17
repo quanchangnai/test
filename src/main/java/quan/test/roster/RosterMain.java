@@ -7,6 +7,7 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
 /**
+ * JavaFX测试样例:员工名册
  * Created by quanchangnai on 2020/5/11.
  */
 public class RosterMain extends Application {
