@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'idea'
     id 'org.openjfx.javafxplugin' version '0.0.8'
     id 'org.beryx.jlink' version '2.19.0'
 }
@@ -9,24 +10,17 @@ group 'quan'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
-    modularity.inferModulePath = true
+    modularity.inferModulePath.set(true)
 }
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-clean {
-    doLast {
-        file("$projectDir${File.separator}out").deleteDir()
-    }
-}
-
-
 application {
     applicationName = 'roster'
-    mainModule = 'quan.test'
-    mainClass = 'quan.test.roster.RosterMain'
+    mainModule.set('quan.test')
+    mainClassName = "quan.test.roster.RosterMain"
 }
 
 javafx {
@@ -34,10 +28,10 @@ javafx {
     modules = ['javafx.controls', 'javafx.fxml']
 }
 
-jlink {
-    launcher {
-        name = 'roster'
-    }
+idea.module {
+    def outputPath = "$projectDir${File.separator}build${File.separator}out${File.separator}"
+    outputDir file("${outputPath}main")
+    testOutputDir file("${outputPath}test")
 }
 
 repositories {
@@ -46,6 +40,18 @@ repositories {
     mavenCentral()
     maven {
         url = 'https://maven.aliyun.com/repository/central'
+    }
+}
+
+jlink {
+    launcher {
+        name = 'roster'
+    }
+}
+
+clean {
+    doLast {
+        file("$projectDir${File.separator}out").deleteDir()
     }
 }
 
