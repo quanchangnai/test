@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>electron1</title>
+    <script>
+        function createWindow() {
+            const {remote} = require('electron')
+            const {BrowserWindow} = remote
+            let window = new BrowserWindow();
+            window.loadFile('src/test.html')
+        }
+    </script>
+</head>
+<body>
+<button onclick="createWindow()">测试</button>
+</body>
+</html>

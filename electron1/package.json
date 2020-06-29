@@ -1,0 +1,17 @@
+{
+    "name": "electron1",
+    "version": "1.0.0",
+    "description": "electron测试",
+    "main": "src/main.js",
+    "scripts": {
+        "start": "electron .",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dist": "electron-builder --dir"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "electron": "^9.0.4"
+    }
+}
