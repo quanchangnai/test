@@ -35,5 +35,5 @@ public class Token {
         return pos + ":" + content;
     }
 
-    public static int INT = 200;
+    public static int INTEGER = 200;
 }

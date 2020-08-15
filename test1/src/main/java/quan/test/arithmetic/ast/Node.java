@@ -18,8 +18,6 @@ public abstract class Node {
         children.add(child);
     }
 
-    public int calc() {
-        return 0;
-    }
+    public abstract int calc() ;
 
 }

@@ -1,10 +1,10 @@
 package quan.test.arithmetic.ast;
 
-public class IntLiteral extends Node {
+public class IntegerLiteral extends Node {
 
     private String value;
 
-    public IntLiteral(String value) {
+    public IntegerLiteral(String value) {
         this.value = value;
     }
 

@@ -17,11 +17,11 @@ public class Lexer {
             if (c >= '0' && c <= '9') {
                 integer.append(c);
                 if (i == expr.length() - 1) {
-                    tokens.add(new Token(i, integer.toString(), Token.INT));
+                    tokens.add(new Token(i, integer.toString(), Token.INTEGER));
                 }
             } else {
                 if (integer.length() != 0) {
-                    tokens.add(new Token(i, integer.toString(), Token.INT));
+                    tokens.add(new Token(i, integer.toString(), Token.INTEGER));
                     integer = new StringBuilder();
                 }
                 if (c == '+' || c == '-' || c == '*' || c == '/' || c == '(' || c == ')') {
