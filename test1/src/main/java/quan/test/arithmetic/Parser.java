@@ -3,12 +3,12 @@ package quan.test.arithmetic;
 import quan.test.arithmetic.ast.*;
 
 /**
- * 四则运算语法分析器 <br/>
- * 语法规则如下: <br/>
- * value : integer | "(" expression ")" <br/>
- * factor : [ "-" ] ( value ) <br/>
- * product : factor { ( "*" | "/" ) factor } <br/>
- * expression : product { ( "+" | "-" ) product } <br/>
+ * 语法分析器 <br/>
+ * 四则运算语法规则: <br/>
+ * unit = integer | "(" expression ")" <br/>
+ * factor = [ "+" | "-" ] ( value ) <br/>
+ * product = factor { ( "*" | "/" ) factor } <br/>
+ * expression = product { ( "+" | "-" ) product } <br/>
  */
 public class Parser extends Lexer {
 
@@ -17,45 +17,37 @@ public class Parser extends Lexer {
     }
 
     public Node expression() {
-        Node node = product();
+        Node left = product();
 
         while (isToken('+') || isToken('-')) {
             Token token = removeToken();
-            if (token.isType('+')) {
-                node = new Addition(node, product());
-            } else {
-                node = new Subtraction(node, product());
-            }
+            left = new BinaryExpr(left, token.getType(), product());
         }
 
-        return node;
+        return left;
     }
 
     Node product() {
-        Node node = factor();
+        Node left = factor();
 
         while (isToken('*') || isToken('/')) {
             Token token = removeToken();
-            if (token.isType('*')) {
-                node = new Multiplication(node, factor());
-            } else {
-                node = new Division(node, factor());
-            }
+            left = new BinaryExpr(left, token.getType(), factor());
         }
 
-        return node;
+        return left;
     }
 
     Node factor() {
-        if (isToken('-')) {
-            removeToken();
-            return new Negative(value());
+        if (isToken('-') || isToken('+')) {
+            Token token = removeToken();
+            return new UnaryExpr(token.getType(), unit());
         } else {
-            return value();
+            return unit();
         }
     }
 
-    Node value() {
+    Node unit() {
         if (isToken(Token.INTEGER)) {
             return new IntegerLiteral(removeToken().getContent());
         }
@@ -73,7 +65,7 @@ public class Parser extends Lexer {
     }
 
     public static void main(String[] args) {
-        Parser parser = new Parser("-(1+1)*(5-2)-6/2-1+4*3");
+        Parser parser = new Parser("-(2-1)*(5-2)-6/2-1+4*+3");
         Node expression = parser.expression();
         System.err.println(expression.calc());
     }
