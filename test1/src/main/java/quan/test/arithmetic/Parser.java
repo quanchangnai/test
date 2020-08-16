@@ -6,7 +6,7 @@ import quan.test.arithmetic.ast.*;
  * 语法分析器 <br/>
  * 四则运算语法规则: <br/>
  * unit = integer | "(" expression ")" <br/>
- * factor = [ "+" | "-" ] ( value ) <br/>
+ * factor = [ "+" | "-" ] unit <br/>
  * product = factor { ( "*" | "/" ) factor } <br/>
  * expression = product { ( "+" | "-" ) product } <br/>
  */
@@ -16,7 +16,7 @@ public class Parser extends Lexer {
         super(expr);
     }
 
-    public Node expression() {
+    public Node expr() {
         Node left = product();
 
         while (isToken('+') || isToken('-')) {
@@ -54,7 +54,7 @@ public class Parser extends Lexer {
 
         if (isToken('(')) {
             removeToken();
-            Node expression = expression();
+            Node expression = expr();
             if (isToken(')')) {
                 removeToken();
                 return expression;
@@ -66,8 +66,8 @@ public class Parser extends Lexer {
 
     public static void main(String[] args) {
         Parser parser = new Parser("-(2-1)*(5-2)-6/2-1+4*+3");
-        Node expression = parser.expression();
-        System.err.println(expression.calc());
+        Node expr = parser.expr();
+        System.err.println(expr.calc());
     }
 
 }
