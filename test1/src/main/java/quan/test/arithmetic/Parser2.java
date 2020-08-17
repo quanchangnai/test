@@ -29,20 +29,20 @@ public class Parser2 extends Lexer {
         Token next = getToken();
 
         while (next != null && next.isOperator()) {
-            left = shift(left);
+            left = reduce(left);
             next = getToken();
         }
 
         return left;
     }
 
-    protected Node shift(Node left) {
+    protected Node reduce(Node left) {
         Token operator = pollToken();
         Node right = factor();
         Token next = getToken();
 
         while (next != null && next.isOperator() && precedences.get(operator.getType()) < precedences.get(next.getType())) {
-            right = shift(right);
+            right = reduce(right);
             next = getToken();
         }
 
@@ -75,7 +75,7 @@ public class Parser2 extends Lexer {
 
 
     public static void main(String[] args) {
-        Parser2 parser2 = new Parser2("-(2-1)*(5-2)-6/2-1+-4*+3");
+        Parser2 parser2 = new Parser2("-(2-1)*(5-2)-6/2*2-1+-4*+3");
         Node expr = parser2.expr();
         System.err.println(expr.calc());
     }
