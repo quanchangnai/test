@@ -13,4 +13,9 @@ public class IntegerLiteral extends Node {
         return Integer.parseInt(value);
     }
 
+    @Override
+    public String toString() {
+        return value;
+    }
+
 }

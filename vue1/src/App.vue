@@ -1,6 +1,6 @@
 <template>
     <div>
-        <Menu/>
+        <Menu mode="horizontal"/>
         <router-view/>
     </div>
 </template>

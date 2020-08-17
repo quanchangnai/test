@@ -30,9 +30,13 @@ public class Token {
         return this.type == type;
     }
 
+    public boolean isOperator() {
+        return type != INTEGER && type != '(' && type != ')';
+    }
+
     @Override
     public String toString() {
-        return pos + ":" + content;
+        return content;
     }
 
     public static int INTEGER = 200;

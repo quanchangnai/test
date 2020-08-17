@@ -27,14 +27,14 @@ public class Lexer {
                 if (c == '+' || c == '-' || c == '*' || c == '/' || c == '(' || c == ')') {
                     tokens.add(new Token(i, c + "", c));
                 } else if (c != ' ') {
-                    throw new RuntimeException(String.format("位置%s存在非法字符:%s,", i, c));
+                    throw new RuntimeException(String.format("位置%s存在非法字符:%s,", i + 1, c));
                 }
             }
         }
     }
 
 
-    public Token removeToken() {
+    public Token pollToken() {
         if (tokens.isEmpty()) {
             return null;
         }
