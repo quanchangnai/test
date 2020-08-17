@@ -13,6 +13,7 @@ import java.util.Map;
  */
 public class Parser2 extends Lexer {
 
+    //二元算符优先级
     private Map<Integer, Integer> precedences = new HashMap<>();
 
     public Parser2(String expr) {
@@ -24,27 +25,28 @@ public class Parser2 extends Lexer {
     }
 
     public Node expr() {
-        Node right = factor();
+        Node left = factor();
         Token next = getToken();
 
         while (next != null && next.isOperator()) {
-            right = shift(right, next.getType());
-            next = pollToken();
+            left = shift(left);
+            next = getToken();
         }
 
-        return right;
+        return left;
     }
 
-    protected Node shift(Node left, int operator) {
+    protected Node shift(Node left) {
+        Token operator = pollToken();
         Node right = factor();
         Token next = getToken();
 
-        while (next != null && next.isOperator() && precedences.get(operator) < precedences.get(next.getType())) {
-            pollToken();
-            right = shift(right, next.getType());
+        while (next != null && next.isOperator() && precedences.get(operator.getType()) < precedences.get(next.getType())) {
+            right = shift(right);
+            next = getToken();
         }
 
-        return new BinaryExpr(left, operator, right);
+        return new BinaryExpr(left, operator.getType(), right);
     }
 
     protected Node factor() {
@@ -73,7 +75,7 @@ public class Parser2 extends Lexer {
 
 
     public static void main(String[] args) {
-        Parser2 parser2 = new Parser2("-(2-1)*(5-2)-6/2-1+4*+3");
+        Parser2 parser2 = new Parser2("-(2-1)*(5-2)-6/2-1+-4*+3");
         Node expr = parser2.expr();
         System.err.println(expr.calc());
     }

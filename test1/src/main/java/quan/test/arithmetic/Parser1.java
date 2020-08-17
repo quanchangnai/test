@@ -30,6 +30,17 @@ public class Parser1 extends Lexer {
         return left;
     }
 
+    protected Node product() {
+        Node left = factor();
+
+        while (isToken('*') || isToken('/')) {
+            Token operator = pollToken();
+            left = new BinaryExpr(left, operator.getType(), factor());
+        }
+
+        return left;
+    }
+
     protected Node factor() {
         if (isToken('-') || isToken('+')) {
             Token operator = pollToken();
@@ -54,17 +65,6 @@ public class Parser1 extends Lexer {
         }
 
         throw new RuntimeException("语法错误:" + pollToken());
-    }
-
-    protected Node product() {
-        Node left = factor();
-
-        while (isToken('*') || isToken('/')) {
-            Token operator = pollToken();
-            left = new BinaryExpr(left, operator.getType(), factor());
-        }
-
-        return left;
     }
 
     public static void main(String[] args) {
