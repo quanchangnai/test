@@ -53,6 +53,14 @@ public class Lexer {
         return token != null && token.getType() == type;
     }
 
+    public RuntimeException error(Token token) {
+        String detail = "语法错误";
+        if (token != null) {
+            detail += ",位置:" + (token.getPos() + 1) + ",内容:" + token.getContent();
+        }
+        return new RuntimeException(detail);
+    }
+
 
     public static void main(String[] args) {
         Lexer lexer = new Lexer("1+(11+1)*2");
