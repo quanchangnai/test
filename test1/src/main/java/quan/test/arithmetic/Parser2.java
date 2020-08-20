@@ -20,6 +20,7 @@ public class Parser2 extends Parser {
         precedences.put((int) '-', 1);
         precedences.put((int) '*', 2);
         precedences.put((int) '/', 2);
+        precedences.put((int) '%', 2);
     }
 
 
@@ -37,7 +38,7 @@ public class Parser2 extends Parser {
     }
 
     protected Node reduce(Node left) {
-        Token operator = pollToken();
+        Token operator = removeToken();
         Node right = factor();
         Token next = getToken();
 

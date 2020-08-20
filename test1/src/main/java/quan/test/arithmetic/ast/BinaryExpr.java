@@ -2,12 +2,12 @@ package quan.test.arithmetic.ast;
 
 public class BinaryExpr extends Node {
 
-    private int operator;
+    private String operator;
 
     public BinaryExpr(Node left, int operator, Node right) {
         addChild(left);
         addChild(right);
-        this.operator = operator;
+        this.operator = String.valueOf((char) operator);
     }
 
     @Override
@@ -16,17 +16,24 @@ public class BinaryExpr extends Node {
         int rightValue = getChild(1).calc();
 
         switch (operator) {
-            case '+':
+            case "+":
                 return leftValue + rightValue;
-            case '-':
+            case "-":
                 return leftValue - rightValue;
-            case '*':
+            case "*":
                 return leftValue * rightValue;
-            case '/':
+            case "/":
                 return leftValue / rightValue;
+            case "%":
+                return leftValue % rightValue;
         }
 
         return 0;
+    }
+
+    @Override
+    public String toString() {
+        return getChild(0) + operator + getChild(1);
     }
 
 }

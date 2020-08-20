@@ -1,6 +1,6 @@
 package quan.test.arithmetic;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -8,7 +8,7 @@ import java.util.List;
  */
 public class Lexer {
 
-    private List<Token> tokens = new ArrayList<>();
+    private List<Token> tokens = new LinkedList<>();
 
     public Lexer(String expr) {
         StringBuilder integer = new StringBuilder();
@@ -24,7 +24,7 @@ public class Lexer {
                     tokens.add(new Token(i, integer.toString(), Token.INTEGER));
                     integer = new StringBuilder();
                 }
-                if (c == '+' || c == '-' || c == '*' || c == '/' || c == '(' || c == ')') {
+                if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '(' || c == ')') {
                     tokens.add(new Token(i, c + "", c));
                 } else if (c != ' ') {
                     throw new RuntimeException(String.format("位置%s存在非法字符:%s,", i + 1, c));
@@ -34,7 +34,7 @@ public class Lexer {
     }
 
 
-    public Token pollToken() {
+    public Token removeToken() {
         if (tokens.isEmpty()) {
             return null;
         }

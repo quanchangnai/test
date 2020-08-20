@@ -2,10 +2,10 @@ package quan.test.arithmetic.ast;
 
 public class UnaryExpr extends Node {
 
-    private int operator;
+    private String operator;
 
     public UnaryExpr(int operator, Node right) {
-        this.operator = operator;
+        this.operator = String.valueOf((char) operator);
         addChild(right);
     }
 
@@ -13,13 +13,17 @@ public class UnaryExpr extends Node {
     public int calc() {
         int value = getChild(0).calc();
         switch (operator) {
-            case '+':
+            case "+":
                 return value;
-            case '-':
+            case "-":
                 return -value;
             default:
                 return 0;
         }
     }
 
+    @Override
+    public String toString() {
+        return operator + getChild(0);
+    }
 }

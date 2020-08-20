@@ -17,7 +17,7 @@ public class Parser1 extends Parser {
         Node left = product();
 
         while (isToken('+') || isToken('-')) {
-            Token operator = pollToken();
+            Token operator = removeToken();
             left = new BinaryExpr(left, operator.getType(), product());
         }
 
@@ -27,8 +27,8 @@ public class Parser1 extends Parser {
     protected Node product() {
         Node left = factor();
 
-        while (isToken('*') || isToken('/')) {
-            Token operator = pollToken();
+        while (isToken('*') || isToken('/') || isToken('%')) {
+            Token operator = removeToken();
             left = new BinaryExpr(left, operator.getType(), factor());
         }
 
