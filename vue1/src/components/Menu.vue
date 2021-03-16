@@ -1,9 +1,18 @@
 <template>
-    <el-menu :mode="mode" :default-active="activeIndex" router @select="onSelect" >
-        <el-menu-item index="1" route="aaa">菜单项a1</el-menu-item>
-        <el-menu-item index="2" route="bbb">菜单项b2</el-menu-item>
-        <el-menu-item index="3" route="ccc">菜单项c</el-menu-item>
-    </el-menu>
+    <div>
+        <el-menu :mode="mode"
+                 :default-active="activeIndex"
+                 background-color="#545c64"
+                 text-color="#fff"
+                 active-text-color="#409eff"
+                 @select="onSelect"
+                 ref="menu"
+                 router>
+            <el-menu-item index="aaa" route="aaa">菜单项a1</el-menu-item>
+            <el-menu-item index="bbb" route="bbb">菜单项b2</el-menu-item>
+            <el-menu-item index="ccc" route="ccc">菜单项c</el-menu-item>
+        </el-menu>
+    </div>
 </template>
 
 <script>

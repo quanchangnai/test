@@ -1,24 +1,19 @@
 <template>
-    <div v-on:click="onContentClick">
-        <span v-if="show">{{content}}</span>
-        <span v-else>aaa</span>
+    <div style="position: relative">
+        <draggable/>
     </div>
 </template>
 
 <script>
+    import Draggable from "@/components/Draggable";
+    
     export default {
         name: "Page1",
+        components: {Draggable},
         data() {
-            return {
-                content: "AAA",
-                show: true
-            }
+            return {}
         },
-        methods: {
-            onContentClick() {
-                this.show = !this.show
-            }
-        }
+        methods: {}
     }
 </script>
 
