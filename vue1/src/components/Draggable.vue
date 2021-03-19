@@ -1,7 +1,8 @@
 <template>
-    <div class="draggable"
-         :style="{left: left + 'px', top:top + 'px'}"
-         @mousedown.prevent="onDown">
+    <div ref="draggable"
+         class="draggable"
+         :style="{left: left + 'px', top: top + 'px'}"
+         @mousedown.stop="onMouseDown">
         <slot>
             <div>测试</div>
         </slot>
@@ -11,33 +12,77 @@
 <script>
     export default {
         name: "Draggable",
+        props: {
+            x: {
+                type: Number,
+                default: 0
+            },
+            y: {
+                type: Number,
+                default: 0
+            },
+        },
         data() {
             return {
-                left: 0,
-                top: 0,
+                left: this.x,
+                top: this.y,
                 dragging: false
             }
         },
+        watch: {
+            x(value) {
+                this.left = value
+            },
+            y(value) {
+                this.top = value
+            }
+        },
         methods: {
-            onDown(event) {
-                if (event.button === 0) {//鼠标左键
-                    this.dragging = true
-                    window.onmousemove = this.onMove
-                    window.onmouseup = this.onUp
+            onMouseDown(event) {
+                if (event.button !== 0) {
+                    return
                 }
+                
+                this.dragging = true
+                window.addEventListener("mousemove", this.onMouseMove)
+                window.addEventListener("mouseup", this.onMouseUp)
+                this.$emit("drag-start", {x: this.left, y: this.top})
+                
+                // console.log("event.target:" + event.target.outerHTML)
+                // console.log("event.target.offsetWidth:" + event.target.offsetWidth)
+                // console.log("event.target.clientWidth:" + event.target.clientWidth)
+                // console.log("event.target.scrollWidth:" + event.target.scrollWidth)
             },
-            onMove(event) {
-                // event.preventDefault()
-                if (this.dragging) {
-                    this.left = this.left + event.movementX
-                    this.top = this.top + event.movementY
+            onMouseMove(event) {
+                if (!this.dragging) {
+                    return
                 }
+                
+                event.stopPropagation();
+                
+                this.left = this.left + event.movementX
+                this.top = this.top + event.movementY
+                this.$emit("dragging", {x: this.left, y: this.top})
             },
-            onUp(event) {
-                event.preventDefault()
+            onMouseUp(event) {
+                if (!this.dragging) {
+                    return
+                }
+                
+                event.stopPropagation();
+                
                 this.dragging = false
-                window.onmousemove = null
-                window.onmouseup = null
+                window.removeEventListener("mousemove", this.onMouseMove)
+                window.removeEventListener("mouseup", this.onMouseUp)
+                
+                this.$emit("drag-end", {
+                    x: this.left,
+                    y: this.top,
+                    width: this.$refs.draggable.offsetWidth,
+                    height: this.$refs.draggable.offsetHeight
+                })
+                
+                // console.log("event.target:" + event.target.outerHTML)
             }
         }
     }
@@ -58,5 +103,7 @@
         background-color: #99ccff;
         text-align: center;
         line-height: 50px;
+        border: 1px solid #98a5e9;
+        border-radius: 5px;
     }
 </style>
