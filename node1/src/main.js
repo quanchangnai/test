@@ -9,14 +9,23 @@ console.info(o);
 
 async function readFile(fileName = "aaa") {
     console.info("readFile start");
-    let result = await timeout(1000);
+    let result;
+    try {
+        result = await timeout(-1000);
+    } catch (e) {
+        console.error("======" + e)
+    }
     console.info("readFile end");
     return `readFile ${fileName} ${result}`
 }
 
 function timeout(delay) {
-    return new Promise(resolve => {
-        setTimeout(resolve, delay, "ok")
+    return new Promise((resolve, reject) => {
+        if (delay > 0) {
+            setTimeout(resolve, delay, "ok");
+        } else {
+            reject("timeout delay error:" + delay)
+        }
     })
 }
 
@@ -28,8 +37,12 @@ readFile().then(result => console.info("readFile result:" + result))
 
 async function* asyncIterate(n = 10) {
     for (let i = 0; i < n; i++) {
-        let result = await timeout(100);
-        yield result + i;
+        try {
+            let result = await timeout(100)
+            yield result + i;
+        } catch (e) {
+            console.error("asyncIterate:" + e)
+        }
     }
 }
 
