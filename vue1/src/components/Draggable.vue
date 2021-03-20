@@ -21,6 +21,7 @@
                 type: Number,
                 default: 0
             },
+            payload: Object
         },
         data() {
             return {
@@ -42,12 +43,12 @@
                 if (event.button !== 0) {
                     return
                 }
-                
+
                 this.dragging = true
                 window.addEventListener("mousemove", this.onMouseMove)
                 window.addEventListener("mouseup", this.onMouseUp)
                 this.$emit("drag-start", {x: this.left, y: this.top})
-                
+
                 // console.log("event.target:" + event.target.outerHTML)
                 // console.log("event.target.offsetWidth:" + event.target.offsetWidth)
                 // console.log("event.target.clientWidth:" + event.target.clientWidth)
@@ -57,31 +58,32 @@
                 if (!this.dragging) {
                     return
                 }
-                
+
                 event.stopPropagation();
-                
+
                 this.left = this.left + event.movementX
                 this.top = this.top + event.movementY
-                this.$emit("dragging", {x: this.left, y: this.top})
+                this.$emit("dragging", {x: this.left, y: this.top, payload: this.payload})
             },
             onMouseUp(event) {
                 if (!this.dragging) {
                     return
                 }
-                
+
                 event.stopPropagation();
-                
+
                 this.dragging = false
                 window.removeEventListener("mousemove", this.onMouseMove)
                 window.removeEventListener("mouseup", this.onMouseUp)
-                
+
                 this.$emit("drag-end", {
                     x: this.left,
                     y: this.top,
                     width: this.$refs.draggable.offsetWidth,
-                    height: this.$refs.draggable.offsetHeight
+                    height: this.$refs.draggable.offsetHeight,
+                    payload: this.payload
                 })
-                
+
                 // console.log("event.target:" + event.target.outerHTML)
             }
         }
@@ -92,11 +94,11 @@
     .draggable {
         position: absolute;
     }
-    
+
     .draggable:hover {
         cursor: move;
     }
-    
+
     .draggable > div {
         width: 100px;
         height: 50px;
@@ -105,5 +107,6 @@
         line-height: 50px;
         border: 1px solid #98a5e9;
         border-radius: 5px;
+        user-select: none;
     }
 </style>
