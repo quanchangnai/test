@@ -1,51 +1,49 @@
 <template>
-    <div id="panel" ref="panel">
+    <div id="pane">
         <canvas id="canvas"
                 ref="canvas"
                 @mousedown="onDrawStart"
-                @mousemove="onDrawing"
-                @mouseup="onDrawEnd"/>
+                @mousemove="onDrawing"/>
         <draggable v-for="node in nodes"
-                   :key="'node'+node.key"
+                   :key="node.key"
                    :x="node.x"
                    :y="node.y"
                    :payload="node"
                    @dragging="onDragging"
                    @drag-end="onDragEnd">
-            <div :ref="'node'+node.key">{{ node.content }}</div>
+            <template v-slot="{pos}">
+                <div :ref="'node'+node.key">{{ node.content }}({{ pos.x }},{{ pos.y }})</div>
+            </template>
         </draggable>
     </div>
 </template>
 
 <script>
     import Draggable from "@/components/Draggable";
-
+    
     export default {
         name: "Page1",
         components: {Draggable},
         async created() {
             this.buildNodes(this.tree);
+            window.addEventListener("mouseup", this.onDrawEnd)
+            window.addEventListener("resize", this.initCanvas)
+            
             await this.$nextTick();
-            this.$refs.canvas.width = this.$refs.canvas.offsetWidth;
-            this.$refs.canvas.height = this.$refs.canvas.offsetHeight;
-            this.calcBounds();
-            this.alignTree();
-            this.drawLines();
+            this.initCanvas();
         },
         data() {
             return {
                 tree: {
                     key: 1,
-                    x: 0,
-                    y: 0,
                     content: "Node1",
                     children: [
-                        {key: 2, x: 0, y: 0, content: "Node2"},
+                        {key: 2, content: "Node2"},
                         {
-                            key: 3, x: 0, y: 0, content: "Node3",
+                            key: 3, content: "Node3",
                             children: [
-                                {key: 5, x: 0, y: 0, content: "Node5"},
-                                {key: 6, x: 0, y: 0, content: "Node6"}
+                                {key: 5, content: "Node5"},
+                                {key: 6, content: "Node6"}
                             ]
                         },
                         {key: 4, x: 0, y: 0, content: "Node4"},
@@ -57,6 +55,8 @@
         },
         methods: {
             buildNodes(node) {
+                this.$set(node, "x", 0);
+                this.$set(node, "y", 0);
                 this.nodes.push(node);
                 if (node.children) {
                     for (let child of node.children) {
@@ -65,6 +65,13 @@
                     }
                 }
             },
+            initCanvas() {
+                this.$refs.canvas.width = this.$refs.canvas.offsetWidth;
+                this.$refs.canvas.height = this.$refs.canvas.offsetHeight;
+                this.calcBounds();
+                this.alignTree();
+                this.drawLines();
+            },
             calcBounds(node = this.tree) {
                 //坑，v-for中的ref是个数组
                 const element = this.$refs["node" + node.key][0];
@@ -72,11 +79,11 @@
                 node.selfHeight = element.offsetHeight + 40;
                 node.treeWidth = node.selfWidth;
                 node.treeHeight = node.selfHeight;
-
-                if (!node.children) {
+                
+                if (!node.children || !node.children.length) {
                     return
                 }
-
+                
                 let maxChildTreeWidth = 0;
                 let totalChildTreeHeight = 0;
                 for (let child of node.children) {
@@ -95,7 +102,7 @@
                 } else {
                     node.x = 100;
                 }
-                if (node.children) {
+                if (node.children && node.children.length) {
                     for (let child of node.children) {
                         this.alignTree(child, lastY);
                         lastY += child.treeHeight;
@@ -114,7 +121,7 @@
                 let canvasWidth = this.$refs.canvas.offsetWidth;
                 let canvasHeight = this.$refs.canvas.offsetHeight;
                 context.clearRect(0, 0, canvasWidth, canvasHeight)
-
+                
                 const drawLine = (x1, y1, x2, y2) => {
                     let cpx1 = x1 + (x2 - x1) / 2;
                     let cpx2 = x2 - (x2 - x1) / 2;
@@ -124,15 +131,15 @@
                     context.bezierCurveTo(cpx1, y1, cpx2, y2, x2, y2);
                     context.stroke();
                 };
-
-                const lineToChildren = (node) => {
+                
+                const lineToChildren = node => {
                     if (!node.children) {
                         return;
                     }
-
+                    
                     let x1 = node.x + node.selfWidth - 60;
                     let y1 = node.y + (node.selfHeight - 40) / 2;
-
+                    
                     for (let child of node.children) {
                         let x2 = child.x;
                         let y2 = child.y + (child.selfHeight - 40) / 2;
@@ -140,7 +147,7 @@
                         lineToChildren(child);
                     }
                 };
-
+                
                 lineToChildren(this.tree);
             },
             onDragging(event) {
@@ -158,12 +165,12 @@
                 if (event.button !== 0) {
                     return
                 }
-
+                
                 // console.log("event.offsetX:" + event.offsetX)
                 // console.log("event.offsetY:" + event.offsetY)
-
+                
                 this.drawing = true;
-
+                
                 let context = this.$refs.canvas.getContext("2d");
                 context.strokeStyle = "blue"
                 context.beginPath();
@@ -173,13 +180,13 @@
                 if (!this.drawing) {
                     return;
                 }
-
+                
                 // console.log("event.offsetX:" + event.offsetX)
-
+                
                 // let canvasWidth = this.$refs.canvas.offsetWidth;
                 // let canvasHeight = this.$refs.canvas.offsetHeight;
                 let context = this.$refs.canvas.getContext("2d");
-
+                
                 // context.clearRect(0, 0, canvasWidth, canvasHeight)
                 context.lineTo(event.offsetX, event.offsetY);
                 context.stroke();
@@ -194,13 +201,13 @@
 </script>
 
 <style scoped>
-    #panel {
+    #pane {
         position: absolute;
         width: 100%;
         height: 100%;
         overflow: hidden;
     }
-
+    
     #canvas {
         position: absolute;
         width: 100%;
