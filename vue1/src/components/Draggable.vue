@@ -47,7 +47,7 @@
                 this.dragging = true
                 window.addEventListener("mousemove", this.onMouseMove)
                 window.addEventListener("mouseup", this.onMouseUp)
-                this.$emit("drag-start", {x: this.left, y: this.top})
+                this.$emit("drag-start", {x: this.left, y: this.top, payload: this.payload})
                 
                 // console.log("event.target:" + event.target.outerHTML)
                 // console.log("event.target.offsetWidth:" + event.target.offsetWidth)
@@ -76,13 +76,7 @@
                 window.removeEventListener("mousemove", this.onMouseMove)
                 window.removeEventListener("mouseup", this.onMouseUp)
                 
-                this.$emit("drag-end", {
-                    x: this.left,
-                    y: this.top,
-                    width: this.$refs.draggable.offsetWidth,
-                    height: this.$refs.draggable.offsetHeight,
-                    payload: this.payload
-                })
+                this.$emit("drag-end", {x: this.left, y: this.top, payload: this.payload})
                 
                 // console.log("event.target:" + event.target.outerHTML)
             }
@@ -100,7 +94,7 @@
     }
     
     .draggable > div {
-        width: 150px;
+        min-width: 150px;
         height: 50px;
         background-color: #99ccff;
         text-align: center;

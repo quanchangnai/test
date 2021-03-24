@@ -9,10 +9,11 @@
                    :x="node.x"
                    :y="node.y"
                    :payload="node"
+                   @drag-start="onDragStart"
                    @dragging="onDragging"
                    @drag-end="onDragEnd">
             <template v-slot="{pos}">
-                <div :ref="'node'+node.key">{{ node.content }}({{ pos.x }},{{ pos.y }})</div>
+                <div :ref="'node'+node.key" style="white-space: pre">{{ node.content }}({{ pos.x }},{{ pos.y }})</div>
             </template>
         </draggable>
     </div>
@@ -24,12 +25,12 @@
     export default {
         name: "Page1",
         components: {Draggable},
-        async created() {
+        created() {
             this.buildNodes(this.tree);
             window.addEventListener("mouseup", this.onDrawEnd)
             window.addEventListener("resize", this.initCanvas)
-            
-            await this.$nextTick();
+        },
+        mounted() {
             this.initCanvas();
         },
         data() {
@@ -46,7 +47,7 @@
                                 {key: 6, content: "Node6"}
                             ]
                         },
-                        {key: 4, x: 0, y: 0, content: "Node4"},
+                        {key: 4, content: "Node4"},
                     ]
                 },
                 nodes: [],
@@ -68,6 +69,7 @@
             initCanvas() {
                 this.$refs.canvas.width = this.$refs.canvas.offsetWidth;
                 this.$refs.canvas.height = this.$refs.canvas.offsetHeight;
+                
                 this.calcBounds();
                 this.alignTree();
                 this.drawLines();
@@ -81,11 +83,12 @@
                 node.treeHeight = node.selfHeight;
                 
                 if (!node.children || !node.children.length) {
-                    return
+                    return;
                 }
                 
                 let maxChildTreeWidth = 0;
                 let totalChildTreeHeight = 0;
+                
                 for (let child of node.children) {
                     this.calcBounds(child);
                     if (child.treeWidth > maxChildTreeWidth) {
@@ -93,6 +96,7 @@
                     }
                     totalChildTreeHeight += child.treeHeight;
                 }
+                
                 node.treeWidth += maxChildTreeWidth;
                 node.treeHeight = Math.max(node.selfHeight, totalChildTreeHeight)
             },
@@ -102,6 +106,9 @@
                 } else {
                     node.x = 100;
                 }
+                
+                node.y = lastY;
+                
                 if (node.children && node.children.length) {
                     for (let child of node.children) {
                         this.alignTree(child, lastY);
@@ -112,9 +119,8 @@
                     } else {
                         node.y = node.children[0].y;
                     }
-                } else {
-                    node.y = lastY;
                 }
+                
             },
             drawLines() {
                 let context = this.$refs.canvas.getContext("2d");
@@ -125,7 +131,7 @@
                 const drawLine = (x1, y1, x2, y2) => {
                     let cpx1 = x1 + (x2 - x1) / 2;
                     let cpx2 = x2 - (x2 - x1) / 2;
-                    context.strokeStyle = "blue"
+                    // context.strokeStyle = "blue"
                     context.beginPath();
                     context.moveTo(x1, y1);
                     context.bezierCurveTo(cpx1, y1, cpx2, y2, x2, y2);
@@ -143,6 +149,11 @@
                     for (let child of node.children) {
                         let x2 = child.x;
                         let y2 = child.y + (child.selfHeight - 40) / 2;
+                        if (child.dragging) {
+                            context.strokeStyle = "red"
+                        } else {
+                            context.strokeStyle = "blue"
+                        }
                         drawLine(x1, y1, x2, y2);
                         lineToChildren(child);
                     }
@@ -150,16 +161,31 @@
                 
                 lineToChildren(this.tree);
             },
+            onDragStart(event) {
+                event.payload.dragging = true;
+            },
             onDragging(event) {
                 // console.log(`onDragging:${event.payload.key},${event.x},${event.y}`)
-                event.payload.x = event.x;
-                event.payload.y = event.y;
+                const moveX = event.x - event.payload.x;
+                const moveY = event.y - event.payload.y;
+                
+                const moveTree = node => {
+                    node.x += moveX;
+                    node.y += moveY;
+                    if (node.children) {
+                        for (let child of node.children) {
+                            moveTree(child);
+                        }
+                    }
+                }
+                moveTree(event.payload)
                 this.drawLines();
             },
             onDragEnd(event) {
-                console.log(`onDragEnd:${event.payload.key},${event.x},${event.y}`)
-                this.alignTree();
-                this.drawLines();
+                // console.log(`onDragEnd:${event.payload.key},${event.x},${event.y}`);
+                // console.log(`onDragEnd:${event.payload.key},${event.width},${event.height}`)
+                event.payload.dragging = false;
+                this.initCanvas()
             },
             onDrawStart(event) {
                 if (event.button !== 0) {
@@ -183,17 +209,13 @@
                 
                 // console.log("event.offsetX:" + event.offsetX)
                 
-                // let canvasWidth = this.$refs.canvas.offsetWidth;
-                // let canvasHeight = this.$refs.canvas.offsetHeight;
                 let context = this.$refs.canvas.getContext("2d");
-                
-                // context.clearRect(0, 0, canvasWidth, canvasHeight)
                 context.lineTo(event.offsetX, event.offsetY);
                 context.stroke();
             },
-            onDrawEnd(event) {
-                console.log("event.offsetY:" + event.offsetY)
-                console.log("event.clientY:" + event.clientY)
+            onDrawEnd() {
+                // console.log("event.offsetY:" + event.offsetY)
+                // console.log("event.clientY:" + event.clientY)
                 this.drawing = false;
             }
         }
@@ -213,5 +235,7 @@
         width: 100%;
         height: 100%;
         background-color: aliceblue;
+        /*background-image: linear-gradient(0deg, transparent 50%, #c4c7ce 51%, transparent 52%), linear-gradient(90deg, transparent 50%, #c4c7ce 51%, transparent 52%);
+        background-size: 30px 30px;*/
     }
 </style>

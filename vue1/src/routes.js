@@ -6,5 +6,5 @@ export default [
     {path: '/', redirect: '/aaa'},
     {path: '/aaa', component: Page1},
     {path: '/bbb', component: Page2},
-    {path: '/ccc', component: Page3},
+    {path: '/ccc/:type', component: Page3, props: true},
 ]
