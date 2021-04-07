@@ -13,7 +13,7 @@
                    @dragging="onDragging"
                    @drag-end="onDragEnd">
             <template v-slot="{pos}">
-                <div :ref="'node'+node.key" style="white-space: pre">{{ node.content }}({{ pos.x }},{{ pos.y }})</div>
+                <div :ref="'node'+node.key">{{ node.content }}({{ pos.x }},{{ pos.y }})</div>
             </template>
         </draggable>
     </div>
@@ -235,7 +235,7 @@
         width: 100%;
         height: 100%;
         background-color: aliceblue;
-        /*background-image: linear-gradient(0deg, transparent 50%, #c4c7ce 51%, transparent 52%), linear-gradient(90deg, transparent 50%, #c4c7ce 51%, transparent 52%);
-        background-size: 30px 30px;*/
+       /* background-image: linear-gradient(0deg, transparent 49%, #e8e9ec 50%, transparent 51%), linear-gradient(90deg, transparent 49%, #e8e9ec 50%, transparent 51%);
+        background-size: 15px 15px;*/
     }
 </style>
