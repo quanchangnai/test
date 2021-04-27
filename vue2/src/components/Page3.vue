@@ -10,7 +10,7 @@
         },
         created() {
             console.log("route.path:" + this.$route.path);
-            console.log("route.query:" +JSON.stringify(this.$route.query));
+            console.log("route.query:" + JSON.stringify(this.$route.query));
             console.log("route.params:%s", JSON.stringify(this.$route.params));
             console.log("route.params.type:" + this.type);
         }

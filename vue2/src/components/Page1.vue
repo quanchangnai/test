@@ -1,27 +1,25 @@
 <template>
-    <div id="pane">
+    <div id="panel">
         <canvas id="canvas"
-                ref="canvas"
                 @mousedown="onDrawStart"
                 @mousemove="onDrawing"/>
-        <draggable v-for="node in nodes"
+            <draggable v-for="node in nodes"
                    :key="node.key"
                    :x="node.x"
                    :y="node.y"
                    :payload="node"
                    @drag-start="onDragStart"
                    @dragging="onDragging"
-                   @drag-end="onDragEnd">
-            <template v-slot="{pos}">
-                <div :ref="'node'+node.key">{{ node.content }}({{ pos.x }},{{ pos.y }})</div>
-            </template>
-        </draggable>
+                   @drag-end="onDragEnd"
+                   v-slot="{pos}">
+                <div :ref="'node'+node.key">{{node.content}}({{pos.x}},{{pos.y}})</div>
+            </draggable>
     </div>
 </template>
 
 <script>
     import Draggable from "@/components/Draggable";
-    
+
     export default {
         name: "Page1",
         components: {Draggable},
@@ -29,6 +27,10 @@
             this.buildNodes(this.tree);
             window.addEventListener("mouseup", this.onDrawEnd)
             window.addEventListener("resize", this.initCanvas)
+        },
+        destroyed() {
+            window.removeEventListener("mouseup", this.onDrawEnd)
+            window.removeEventListener("resize", this.initCanvas)
         },
         mounted() {
             this.initCanvas();
@@ -67,9 +69,10 @@
                 }
             },
             initCanvas() {
-                this.$refs.canvas.width = this.$refs.canvas.offsetWidth;
-                this.$refs.canvas.height = this.$refs.canvas.offsetHeight;
-                
+                const canvas = document.querySelector("#canvas")
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+
                 this.calcBounds();
                 this.alignTree();
                 this.drawLines();
@@ -81,14 +84,14 @@
                 node.selfHeight = element.offsetHeight + 40;
                 node.treeWidth = node.selfWidth;
                 node.treeHeight = node.selfHeight;
-                
+
                 if (!node.children || !node.children.length) {
                     return;
                 }
-                
+
                 let maxChildTreeWidth = 0;
                 let totalChildTreeHeight = 0;
-                
+
                 for (let child of node.children) {
                     this.calcBounds(child);
                     if (child.treeWidth > maxChildTreeWidth) {
@@ -96,7 +99,7 @@
                     }
                     totalChildTreeHeight += child.treeHeight;
                 }
-                
+
                 node.treeWidth += maxChildTreeWidth;
                 node.treeHeight = Math.max(node.selfHeight, totalChildTreeHeight)
             },
@@ -106,9 +109,9 @@
                 } else {
                     node.x = 100;
                 }
-                
+
                 node.y = lastY;
-                
+
                 if (node.children && node.children.length) {
                     for (let child of node.children) {
                         this.alignTree(child, lastY);
@@ -120,14 +123,13 @@
                         node.y = node.children[0].y;
                     }
                 }
-                
+
             },
             drawLines() {
-                let context = this.$refs.canvas.getContext("2d");
-                let canvasWidth = this.$refs.canvas.offsetWidth;
-                let canvasHeight = this.$refs.canvas.offsetHeight;
-                context.clearRect(0, 0, canvasWidth, canvasHeight)
-                
+                const canvas = document.querySelector("#canvas")
+                const context = canvas.getContext("2d");
+                context.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight)
+
                 const drawLine = (x1, y1, x2, y2) => {
                     let cpx1 = x1 + (x2 - x1) / 2;
                     let cpx2 = x2 - (x2 - x1) / 2;
@@ -137,15 +139,15 @@
                     context.bezierCurveTo(cpx1, y1, cpx2, y2, x2, y2);
                     context.stroke();
                 };
-                
+
                 const lineToChildren = node => {
                     if (!node.children) {
                         return;
                     }
-                    
+
                     let x1 = node.x + node.selfWidth - 60;
                     let y1 = node.y + (node.selfHeight - 40) / 2;
-                    
+
                     for (let child of node.children) {
                         let x2 = child.x;
                         let y2 = child.y + (child.selfHeight - 40) / 2;
@@ -158,7 +160,7 @@
                         lineToChildren(child);
                     }
                 };
-                
+
                 lineToChildren(this.tree);
             },
             onDragStart(event) {
@@ -168,7 +170,7 @@
                 // console.log(`onDragging:${event.payload.key},${event.x},${event.y}`)
                 const moveX = event.x - event.payload.x;
                 const moveY = event.y - event.payload.y;
-                
+
                 const moveTree = node => {
                     node.x += moveX;
                     node.y += moveY;
@@ -191,13 +193,13 @@
                 if (event.button !== 0) {
                     return
                 }
-                
+
                 // console.log("event.offsetX:" + event.offsetX)
                 // console.log("event.offsetY:" + event.offsetY)
-                
+
                 this.drawing = true;
-                
-                let context = this.$refs.canvas.getContext("2d");
+
+                let context = document.querySelector("#canvas").getContext("2d");
                 context.strokeStyle = "blue"
                 context.beginPath();
                 context.moveTo(event.offsetX, event.offsetY);
@@ -206,10 +208,10 @@
                 if (!this.drawing) {
                     return;
                 }
-                
+
                 // console.log("event.offsetX:" + event.offsetX)
-                
-                let context = this.$refs.canvas.getContext("2d");
+
+                let context = document.querySelector("#canvas").getContext("2d");
                 context.lineTo(event.offsetX, event.offsetY);
                 context.stroke();
             },
@@ -223,19 +225,19 @@
 </script>
 
 <style scoped>
-    #pane {
+    #panel {
         position: absolute;
         width: 100%;
         height: 100%;
         overflow: hidden;
     }
-    
+
     #canvas {
         position: absolute;
         width: 100%;
         height: 100%;
         background-color: aliceblue;
-       /* background-image: linear-gradient(0deg, transparent 49%, #e8e9ec 50%, transparent 51%), linear-gradient(90deg, transparent 49%, #e8e9ec 50%, transparent 51%);
-        background-size: 15px 15px;*/
+        /* background-image: linear-gradient(0deg, transparent 49%, #e8e9ec 50%, transparent 51%), linear-gradient(90deg, transparent 49%, #e8e9ec 50%, transparent 51%);
+         background-size: 15px 15px;*/
     }
 </style>

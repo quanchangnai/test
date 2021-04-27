@@ -1,6 +1,6 @@
 <template>
     <el-menu :mode="mode"
-             :default-active="activeIndex"
+             :default-active="defaultItem"
              background-color="#545c64"
              text-color="#fff"
              active-text-color="#409eff"
@@ -18,7 +18,7 @@
         name: "Menu",
         data() {
             return {
-                activeIndex: "aaa"
+                defaultItem: ""
             }
         },
         props: {
@@ -27,10 +27,14 @@
                 default: 'horizontal'
             }
         },
+        created() {
+            this.defaultItem = this.$route.fullPath
+        },
         methods: {
             onSelect(index) {
                 // this.$router.push(index)
                 console.log("selected:" + index);
+                console.log("defaultItem:" + this.defaultItem);
             }
         }
     }
