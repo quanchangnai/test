@@ -66,7 +66,7 @@ person.name = "张三";
 person.say();
 console.info(person.name);
 
-console.info("for of==================");
+console.info("for of=================="+[...person]);
 for (let p of person) {
     console.info(p)
 }

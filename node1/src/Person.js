@@ -41,6 +41,16 @@ class Person {
             yield this.#name + ":" + i;
         }
     }
+
+    // [Symbol.iterator]() {
+    //     let i = 0;
+    //     let name = this.#name
+    //     return {
+    //         next() {
+    //             return {done: i > 5, value: name + ":" + i++};
+    //         }
+    //     }
+    // }
 }
 
 export default Person

@@ -10,24 +10,24 @@
 </template>
 
 <script>
-    import Menu from './components/Menu'
-    
-    export default {
-        name: 'App',
-        components: {Menu},
-    }
+import Menu from './components/Menu'
+
+export default {
+    name: 'App',
+    components: {Menu},
+}
 </script>
 
 <style scoped>
-    #header {
-        position: absolute;
-        width: 100%;
-    }
-    
-    #main {
-        position: absolute;
-        width: 100%;
-        top: 60px;
-        bottom: 0;
-    }
+#header {
+    position: absolute;
+    width: 100%;
+}
+
+#main {
+    position: absolute;
+    width: 100%;
+    top: 60px;
+    bottom: 0;
+}
 </style>

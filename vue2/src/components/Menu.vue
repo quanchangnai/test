@@ -14,30 +14,30 @@
 </template>
 
 <script>
-    export default {
-        name: "Menu",
-        data() {
-            return {
-                defaultItem: ""
-            }
-        },
-        props: {
-            mode: {
-                type: String,
-                default: 'horizontal'
-            }
-        },
-        created() {
-            this.defaultItem = this.$route.fullPath
-        },
-        methods: {
-            onSelect(index) {
-                // this.$router.push(index)
-                console.log("selected:" + index);
-                console.log("defaultItem:" + this.defaultItem);
-            }
+export default {
+    name: "Menu",
+    data() {
+        return {
+            defaultItem: ""
+        }
+    },
+    props: {
+        mode: {
+            type: String,
+            default: 'horizontal'
+        }
+    },
+    created() {
+        this.defaultItem = this.$route.fullPath
+    },
+    methods: {
+        onSelect(index) {
+            // this.$router.push(index)
+            console.log("selected:" + index);
+            console.log("defaultItem:" + this.defaultItem);
         }
     }
+}
 </script>
 
 <style scoped>
