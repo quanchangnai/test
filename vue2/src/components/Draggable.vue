@@ -2,7 +2,7 @@
     <div ref="draggable"
          class="draggable"
          :style="{left: left + 'px', top: top + 'px'}"
-         @mousedown.stop="onMouseDown">
+         @mousedown.left.stop="onMouseDown">
         <slot :pos="{x:left,y:top}">
             <div>测试:({{ left }},{{ top }})</div>
         </slot>
@@ -39,11 +39,7 @@ export default {
         }
     },
     methods: {
-        onMouseDown(event) {
-            if (event.button !== 0) {
-                return
-            }
-
+        onMouseDown() {
             this.dragging = true;
             window.addEventListener("mousemove", this.onMouseMove);
             window.addEventListener("mouseup", this.onMouseUp);

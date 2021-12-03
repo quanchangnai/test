@@ -2,8 +2,10 @@
     <div>
         <div id="left">left</div>
         <div id="center">
-            <draggable id="board">
-                <canvas id="canvas"/>
+            <draggable id="board"
+                       @drag-end="onBoardDragEnd"
+                       @contextmenu.native="onBoardContextMenu">
+                <canvas id="canvas" @contextmenu.prevent/>
                 <draggable v-for="node in nodes"
                            :key="node.key"
                            :x="node.x"
@@ -12,12 +14,19 @@
                            @drag-start="onNodeDragStart"
                            @dragging="onNodeDragging"
                            @drag-end="onNodeDragEnd"
+                           @contextmenu.native="onNodeContextMenu"
                            v-slot="{pos}">
-                    <div class="node" :ref="'node'+node.key">{{ node.content }}({{ pos.x }},{{ pos.y }})</div>
+                    <div class="node" :ref="'node'+node.key">node{{ node.key }}({{ pos.x }},{{ pos.y }})</div>
                 </draggable>
             </draggable>
         </div>
-        <div id="right">right</div>
+        <div id="right">
+            <el-table :data="nodeDefinitions" size="medium" stripe border>
+                <el-table-column prop="name">
+
+                </el-table-column>
+            </el-table>
+        </div>
     </div>
 </template>
 
@@ -39,26 +48,27 @@ export default {
     },
     data() {
         return {
+            nodeDefinitions: [{id: 1, name: "节点类型1"}, {id: 2, name: "节点类型2"}],
             tree: {
-                key: 1, content: "Node1",
+                key: 1,
                 children: [
-                    {key: 2, content: "Node2"},
+                    {key: 2},
                     {
-                        key: 3, content: "Node3",
+                        key: 3,
                         children: [
                             {
-                                key: 5, content: "Node5",
+                                key: 5,
                                 children: [
                                     {
-                                        key: 6, content: "Node6",
+                                        key: 6,
                                         children: [
                                             {
-                                                key: 7, content: "Node7",
+                                                key: 7,
                                                 children: [
                                                     {
-                                                        key: 8, content: "Node8",
+                                                        key: 8,
                                                         children: [
-                                                            {key: 9, content: "Node9"},
+                                                            {key: 9},
                                                         ]
                                                     },
                                                 ]
@@ -69,15 +79,16 @@ export default {
                             },
                         ]
                     },
-                    {key: 4, content: "Node4"},
+                    {key: 4},
                 ]
             },
             nodes: [],
-            drawing: false,
+            maxNodeKey: 0
         }
     },
     methods: {
         buildNodes(node) {
+            this.maxNodeKey = Math.max(this.maxNodeKey, node.key);
             this.$set(node, "x", 0);
             this.$set(node, "y", 0);
             this.nodes.push(node);
@@ -159,7 +170,7 @@ export default {
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
             const context = canvas.getContext("2d");
-            context.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+            context.clearRect(0, 0, canvas.width, canvas.height);
 
             const drawLine = (x1, y1, x2, y2) => {
                 let cpx1 = x1 + (x2 - x1) / 2;
@@ -199,19 +210,61 @@ export default {
         },
         onNodeDragging(event) {
             // console.log(`onDragging:${event.payload.key},${event.x},${event.y}`)
-            const moveX = event.x - event.payload.x;
-            const moveY = event.y - event.payload.y;
+            let node = event.payload;
+            const moveX = event.x - node.x;
+            const moveY = event.y - node.y;
 
-            const moveTree = node => {
-                node.x += moveX;
-                node.y += moveY;
-                if (node.children) {
-                    for (let child of node.children) {
+            const moveTree = node0 => {
+                node0.x += moveX;
+                node0.y += moveY;
+                if (node0.children) {
+                    for (let child of node0.children) {
                         moveTree(child);
                     }
                 }
             };
-            moveTree(event.payload);
+            moveTree(node);
+
+            //寻找最近的的节点作为父节点
+            let nearestNode = null;
+            let minDistance = -1;
+            const findNearestNode = node0 => {
+                if (node0 === node) {
+                    return;
+                }
+                let x0 = node0.x + node0.selfWidth - 60;
+                let y0 = node0.y + (node0.selfHeight - 40) / 2;
+                let distance = (node.x - x0) ** 2 + (node.y - y0) ** 2;
+                if (minDistance < 0 || distance < minDistance) {
+                    minDistance = distance;
+                    nearestNode = node0;
+                }
+                if (node0.children) {
+                    for (let child of node0.children) {
+                        findNearestNode(child);
+                    }
+                }
+            };
+
+            findNearestNode(this.tree);
+
+            //关联父子节点
+            if (nearestNode != null && nearestNode !== node.parent) {
+                if (node.parent && node.parent.children) {
+                    node.parent.children.splice(node.parent.children.indexOf(node), 1);
+                }
+                node.parent = nearestNode;
+                if (!node.parent.children) {
+                    node.parent.children = [];
+                }
+                node.parent.children.push(node);
+            }
+
+            //按y轴排序兄弟节点
+            if (node.parent && node.parent.children) {
+                node.parent.children.sort((n1, n2) => n1.y - n2.y);
+            }
+
             this.drawLines();
         },
         onNodeDragEnd(event) {
@@ -219,6 +272,15 @@ export default {
             // console.log(`onDragEnd:${event.payload.key},${event.width},${event.height}`)
             event.payload.dragging = false;
             this.drawCanvas()
+        },
+        onNodeContextMenu(event) {
+            console.log("onNodeContextMenu:" + event.currentTarget.id)
+        },
+        onBoardDragEnd(event) {
+            console.log("onBoardDragEnd:" + event)
+        },
+        onBoardContextMenu(event) {
+            console.log("onBoardContextMenu:" + event.currentTarget.id)
         }
     }
 }
