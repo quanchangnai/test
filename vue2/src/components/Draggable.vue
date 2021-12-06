@@ -21,6 +21,10 @@ export default {
             type: Number,
             default: 0
         },
+        initDragging: {
+            type: Boolean,
+            default: false
+        },
         payload: Object
     },
     data() {
@@ -38,11 +42,16 @@ export default {
             this.top = value
         }
     },
+    mounted() {
+        if (this.initDragging) {
+            this.onMouseDown();
+        }
+    },
     methods: {
         onMouseDown() {
             this.dragging = true;
             window.addEventListener("mousemove", this.onMouseMove);
-            window.addEventListener("mouseup", this.onMouseUp);
+            window.addEventListener("mouseup", this.onMouseUp, {once: true});
             this.$emit("drag-start", {x: this.left, y: this.top, payload: this.payload});
         },
         onMouseMove(event) {
@@ -61,7 +70,6 @@ export default {
 
             this.dragging = false;
             window.removeEventListener("mousemove", this.onMouseMove);
-            window.removeEventListener("mouseup", this.onMouseUp);
 
             this.$emit("drag-end", {x: this.left, y: this.top, payload: this.payload});
         }
