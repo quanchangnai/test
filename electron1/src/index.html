@@ -4,15 +4,27 @@
     <meta charset="UTF-8">
     <title>electron1</title>
     <script>
+        const {remote, ipcRenderer} = require('electron');
+
+        let c = 0;
+        ipcRenderer.on("init", (event, arg1) => {
+            console.log("init:" + arg1);
+            test2();
+        });
+
         function createWindow() {
-            const {remote} = require('electron')
-            const {BrowserWindow} = remote
-            let window = new BrowserWindow();
+            let window = new remote.BrowserWindow();
             window.loadFile('src/test.html')
         }
+
+        function test2() {
+            ipcRenderer.send("test2", c++);
+        }
+
     </script>
 </head>
 <body>
-<button onclick="createWindow()">测试</button>
+<button onclick="createWindow()">测试1</button>
+<button onclick="test2()">测试2</button>
 </body>
 </html>
