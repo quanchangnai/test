@@ -15,21 +15,26 @@
                            @drag-start="onNodeDragStart"
                            @dragging="onNodeDragging"
                            @drag-end="onNodeDragEnd"
-                           @contextmenu.native="onNodeContextMenu"
-                           v-slot="{pos}">
-                    <div class="node" :ref="'node'+node.key">tid:{{ node.tid }},key:{{ node.key }}@({{ pos.x }},{{ pos.y }})</div>
+                           @contextmenu.native="onNodeContextMenu">
+                    <template v-slot="{pos}">
+                        <div class="node" :ref="'node'+node.key">tid:{{ node.tid }},key:{{ node.key }}@({{ pos.x }},{{ pos.y }})</div>
+                    </template>
                 </draggable>
             </draggable>
         </div>
         <div id="right">
             <el-table :data="templates" size="medium" stripe border>
-                <el-table-column v-slot="{row}">
-                    <div style="cursor: pointer;user-select: none" @mousedown="(e)=>onTemplateSelect(e,row.id)"> {{ row.name }}</div>
+                <el-table-column>
+                    <template #header>
+                        <el-input clearable size="medium" placeholder="输入关键字搜索" prefix-icon="el-icon-search"/>
+                    </template>
+                    <template #default="{row}">
+                        <div style="cursor: pointer;user-select: none" @mousedown="e=>onTemplateSelect(e,row.id)"> {{ row.name }}</div>
+                    </template>
                 </el-table-column>
             </el-table>
         </div>
         <draggable id="tempNode"
-                   style="z-index: 1"
                    v-if="tempNode!=null"
                    :x="tempNode.x"
                    :y="tempNode.y"
@@ -46,19 +51,23 @@
 <script>
 import Draggable from "./Draggable";
 
+const nodeSpaceX = 60;//节点x轴间隔空间
+const nodeSpaceY = 40;//节点y轴间隔空间
+const boardEdgeSpace = 100;//画板边缘空间
+
 export default {
     name: "Page1",
-
     components: {Draggable},
     created() {
         this.buildNodes(this.tree);
-        window.addEventListener("resize", this.drawCanvas)
+        window.addEventListener("resize", this.drawCanvas);
     },
     destroyed() {
-        window.removeEventListener("resize", this.drawCanvas)
+        window.removeEventListener("resize", this.drawCanvas);
     },
     mounted() {
         this.drawCanvas();
+        this.$nextTick(this.drawCanvas);
     },
     data() {
         return {
@@ -106,6 +115,9 @@ export default {
     },
     methods: {
         buildNodes(node) {
+            if (node == null) {
+                return;
+            }
             this.maxNodeKey = Math.max(this.maxNodeKey, node.key);
             this.$set(node, "x", 0);
             this.$set(node, "y", 0);
@@ -120,22 +132,19 @@ export default {
         drawCanvas() {
             this.calcBounds();
 
-            const board = document.querySelector("#board");
-            if (board.offsetWidth <= this.tree.treeWidth + 200) {
-                board.style.width = (this.tree.treeWidth + 200) + "px"
-            } else {
-                board.style.width = "100%"
-            }
-            if (board.offsetHeight <= this.tree.treeHeight + 200) {
-                board.style.height = (this.tree.treeHeight + 200) + "px"
-            } else {
-                board.style.height = "100%"
+            if (this.tree) {
+                const board = document.querySelector("#board");
+                board.style.width = Math.max(board.parentElement.offsetWidth, this.tree.treeWidth + boardEdgeSpace * 2) + "px";
+                board.style.height = Math.max(board.parentElement.offsetHeight, this.tree.treeHeight + boardEdgeSpace * 2) + "px";
             }
 
             this.alignTree();
             this.drawLines();
         },
         calcBounds(node = this.tree) {
+            if (!node) {
+                return;
+            }
             //坑，v-for中的ref是个数组
             let element;
             if (node === this.tempNode) {
@@ -143,8 +152,8 @@ export default {
             } else {
                 element = this.$refs["node" + node.key][0];
             }
-            node.selfWidth = element.offsetWidth + 60;
-            node.selfHeight = element.offsetHeight + 40;
+            node.selfWidth = element.offsetWidth + nodeSpaceX;
+            node.selfHeight = element.offsetHeight + nodeSpaceY;
 
             if (!node.children || !node.children.length) {
                 node.treeWidth = node.selfWidth;
@@ -166,11 +175,14 @@ export default {
             node.treeWidth = node.selfWidth + maxChildTreeWidth;
             node.treeHeight = Math.max(node.selfHeight, totalChildTreeHeight)
         },
-        alignTree(node = this.tree, lastY = 100) {
+        alignTree(node = this.tree, lastY = boardEdgeSpace) {
+            if (!node) {
+                return;
+            }
             if (node.parent) {
                 node.x = node.parent.x + node.parent.selfWidth;
             } else {
-                node.x = 100;
+                node.x = boardEdgeSpace;
             }
 
             node.y = lastY;
@@ -206,16 +218,19 @@ export default {
             };
 
             const lineToChildren = node => {
-                if (!node.children) {
+                if (!node || !node.children) {
                     return;
                 }
 
-                let x1 = node.x + node.selfWidth - 60;
-                let y1 = node.y + (node.selfHeight - 40) / 2;
+                let x1 = node.x + node.selfWidth - nodeSpaceX;
+                let y1 = node.y + (node.selfHeight - nodeSpaceY) / 2;
+                if (node === this.tree) {
+                    console.log(`tree:${this.tree.selfWidth},${node.x},${x1}`);
+                }
 
                 for (let child of node.children) {
                     let x2 = child.x;
-                    let y2 = child.y + (child.selfHeight - 40) / 2;
+                    let y2 = child.y + (child.selfHeight - nodeSpaceY) / 2;
                     if (child.dragging) {
                         context.strokeStyle = "red"
                     } else {
@@ -230,10 +245,10 @@ export default {
 
             if (this.tempNode && this.tempNode.parent) {
                 context.strokeStyle = "red";
-                let x1 = this.tempNode.parent.x + this.tempNode.parent.selfWidth - 60;
-                let y1 = this.tempNode.parent.y + (this.tempNode.parent.selfHeight - 40) / 2;
+                let x1 = this.tempNode.parent.x + this.tempNode.parent.selfWidth - nodeSpaceX;
+                let y1 = this.tempNode.parent.y + (this.tempNode.parent.selfHeight - nodeSpaceY) / 2;
                 let x2 = this.tempNode.x - document.querySelector("#left").offsetWidth - this.boardX;
-                let y2 = this.tempNode.y + (this.tempNode.selfHeight - 40) / 2 - this.boardY;
+                let y2 = this.tempNode.y + (this.tempNode.selfHeight - nodeSpaceY) / 2 - this.boardY;
                 drawLine(x1, y1, x2, y2);
             }
         },
@@ -274,11 +289,11 @@ export default {
             let minDistance = -1;
 
             const find = node0 => {
-                if (node0 === node) {
+                if (!node0 || node0 === node) {
                     return;
                 }
-                let x0 = deltaX + node0.x + node0.selfWidth - 60;
-                let y0 = deltaY + node0.y + (node0.selfHeight - 40) / 2;
+                let x0 = deltaX + node0.x + node0.selfWidth - nodeSpaceX;
+                let y0 = deltaY + node0.y + (node0.selfHeight - nodeSpaceY) / 2;
                 let distance = (node.x - x0) ** 2 + (node.y - y0) ** 2;
                 if (minDistance < 0 || distance < minDistance) {
                     minDistance = distance;
@@ -349,7 +364,12 @@ export default {
             this.tempNode = null;
             this.nodes.push(tempNode);
             tempNode.dragging = false;
-            this.linkParentNode(tempNode, tempNode.parent);
+            if (tempNode.parent) {
+                this.linkParentNode(tempNode, tempNode.parent);
+            } else {
+                this.tree = tempNode;
+            }
+
             this.$nextTick(() => {
                 this.drawCanvas();
             });
@@ -364,9 +384,12 @@ export default {
                 }
             };
             let deltaY = getElementTop(document.querySelector("#container"));
-            this.tempNode = {key: this.maxNodeKey++, tid: tid, x: event.clientX + 5, y: event.clientY - deltaY};
+            this.tempNode = {key: this.maxNodeKey++, tid: tid, x: event.clientX, y: event.clientY - deltaY};
 
             this.$nextTick(() => {
+                let tempNode = document.querySelector("#tempNode");
+                this.tempNode.x -= tempNode.offsetWidth / 2;
+                this.tempNode.y -= tempNode.offsetHeight / 2;
                 this.calcBounds(this.tempNode);
                 this.linkParentNode(this.tempNode);
                 this.drawLines();
@@ -394,8 +417,8 @@ export default {
     width: 250px;
     height: 100%;
     right: 0;
-    z-index: 0;
     border: solid 1px blue;
+    user-select: none;
 }
 
 #center {
@@ -434,5 +457,11 @@ export default {
 
 .node:hover {
     cursor: pointer;
+}
+
+#tempNode {
+    /*鼠标事件穿透该div*/
+    pointer-events: none;
+    z-index: 1;
 }
 </style>
