@@ -1,6 +1,6 @@
 <template>
     <div id="content" v-if="visible" :style="{left:x+'px',top:y+'px'}" @click.stop>
-        右键菜单1
+        <slot>右键菜单</slot>
     </div>
 </template>
 
@@ -39,7 +39,8 @@ export default {
     position: absolute;
     z-index: 1000;
     min-width: 150px;
-    height: 100px;
-    background-color: darkturquoise;
+    min-height: 50px;
+    border: solid #dadce0 1px;
+    background-color: #ffffff;
 }
 </style>

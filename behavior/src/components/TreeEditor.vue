@@ -1,14 +1,32 @@
 <template>
     <div id="container">
-        <div id="left">left</div>
+        <div id="left">
+            <el-table :data="trees"
+                      ref="treesTable"
+                      size="medium"
+                      highlight-current-row
+                      @current-change="onTreeSelect"
+                      stripe border>
+                <el-table-column>
+                    <template #header>
+                        <el-input clearable size="medium" placeholder="输入关键字搜索" prefix-icon="el-icon-search"/>
+                    </template>
+                    <template #default="{row}">
+                        <div> {{ row.id }}:{{ row.name }}</div>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
         <div id="center">
             <draggable id="board"
+                       :x="boardX"
+                       :y="boardY"
                        @drag-end="onBoardDragEnd"
                        @contextmenu.native="onBoardContextMenu"
                        @mouseup.native="onBoardMouseUp">
                 <canvas id="canvas" @contextmenu.prevent/>
                 <draggable v-for="node in nodes"
-                           :key="node.key"
+                           :key="node.id"
                            :x="node.x"
                            :y="node.y"
                            :payload="node"
@@ -17,7 +35,7 @@
                            @drag-end="onNodeDragEnd"
                            @contextmenu.native="onNodeContextMenu">
                     <template v-slot="{pos}">
-                        <div class="node" :ref="'node'+node.key">tid:{{ node.tid }},key:{{ node.key }}@({{ pos.x }},{{ pos.y }})</div>
+                        <div class="node" :ref="'node'+node.id">tid:{{ node.tid }},id:{{ node.id }}@({{ pos.x }},{{ pos.y }})</div>
                     </template>
                 </draggable>
             </draggable>
@@ -43,7 +61,7 @@
                    @drag-start="onNodeDragStart"
                    @dragging="onNodeDragging"
                    @drag-end="onNodeDragEnd">
-            <div class="node" :ref="'node'+tempNode.key">tid:{{ tempNode.tid }},key:{{ tempNode.key }}</div>
+            <div class="node" :ref="'node'+tempNode.id">tid:{{ tempNode.tid }},id:{{ tempNode.id }}</div>
         </draggable>
     </div>
 </template>
@@ -51,78 +69,60 @@
 <script>
 import Draggable from "./Draggable";
 import utils from "../utils";
+import {ipcRenderer} from 'electron'
 
 const nodeSpaceX = 60;//节点x轴间隔空间
 const nodeSpaceY = 40;//节点y轴间隔空间
 const boardEdgeSpace = 100;//画板边缘空间
 
 export default {
-    name: "Page1",
+    name: "TreeEditor",
     components: {Draggable},
-    created() {
-        this.buildNodes(this.tree);
-        window.addEventListener("resize", this.drawCanvas);
-    },
     destroyed() {
         window.removeEventListener("resize", this.drawCanvas);
     },
-    mounted() {
+    async mounted() {
+        this.templates = await ipcRenderer.invoke("load-templates");
+        this.trees = await ipcRenderer.invoke("load-trees");
+        this.tree = this.trees[0];
+        this.buildNodes(this.tree);
+        await this.$nextTick();
         this.drawCanvas();
-        this.$nextTick(this.drawCanvas);
+        await this.$nextTick();
+        this.drawCanvas();
+        window.addEventListener("resize", this.drawCanvas);
     },
     data() {
         return {
-            templates: [{id: 1, name: "节点模板1"}, {id: 2, name: "节点模板2"}],
-            tree: {
-                key: 1,
-                tid: 1,
-                children: [
-                    {key: 2, tid: 1},
-                    {
-                        key: 3, tid: 1,
-                        children: [
-                            {
-                                key: 5, tid: 1,
-                                children: [
-                                    {
-                                        key: 6, tid: 1,
-                                        children: [
-                                            {
-                                                key: 7, tid: 1,
-                                                children: [
-                                                    {
-                                                        key: 8, tid: 1,
-                                                        children: [
-                                                            {key: 9, tid: 1},
-                                                        ]
-                                                    },
-                                                ]
-                                            },
-                                        ]
-                                    },
-                                ]
-                            },
-                        ]
-                    },
-                    {key: 4, tid: 1},
-                ]
-            },
+            templates: null,
+            trees: null,
+            tree: null,
             nodes: [],
-            maxNodeKey: 100,
+            maxNodeId: 1,
             tempNode: null,
             boardX: 0,
             boardY: 0,
         }
     },
     methods: {
+        async onTreeSelect(tree) {
+            this.tree = tree;
+            this.nodes = [];
+            await this.$nextTick();
+            this.buildNodes(this.tree);
+            await this.$nextTick();
+            this.drawCanvas();
+        },
         buildNodes(node) {
             if (node == null) {
                 return;
             }
-            this.maxNodeKey = Math.max(this.maxNodeKey, node.key);
+
             this.$set(node, "x", 0);
             this.$set(node, "y", 0);
             this.nodes.push(node);
+            this.maxNodeId = Math.max(this.maxNodeId, node.id);
+
             if (node.children) {
                 for (let child of node.children) {
                     child.parent = node;
@@ -146,12 +146,13 @@ export default {
             if (!node) {
                 return;
             }
+
             //坑，v-for中的ref是个数组
             let element;
             if (node === this.tempNode) {
-                element = this.$refs["node" + node.key];
+                element = this.$refs["node" + node.id];
             } else {
-                element = this.$refs["node" + node.key][0];
+                element = this.$refs["node" + node.id][0];
             }
             node.selfWidth = element.offsetWidth + nodeSpaceX;
             node.selfHeight = element.offsetHeight + nodeSpaceY;
@@ -253,7 +254,6 @@ export default {
             event.payload.dragging = true;
         },
         onNodeDragging(event) {
-            // console.log(`onDragging:${event.payload.key},${event.x},${event.y}`)
             let node = event.payload;
             const moveX = event.x - node.x;
             const moveY = event.y - node.y;
@@ -337,23 +337,49 @@ export default {
             parentNode.children.sort((n1, n2) => n1.y - n2.y);
         },
         onNodeDragEnd(event) {
-            console.log(`onDragEnd:${event.payload.key},${event.x},${event.y}`);
             event.payload.dragging = false;
-            this.drawCanvas()
+            this.drawCanvas();
+            this.saveTree();
+        },
+        saveTree() {
+            let buildTree = tree => {
+                let resultTree = {id: tree.id, name: tree.name, tid: tree.tid};
+                if (tree.children) {
+                    resultTree.children = [];
+                    for (let child of tree.children) {
+                        resultTree.children.push(buildTree(child))
+                    }
+                }
+                return resultTree;
+            };
+
+            ipcRenderer.invoke("save-tree", buildTree(this.tree));
         },
         onNodeContextMenu(event) {
             console.log("onNodeContextMenu:" + event.currentTarget.id)
         },
-        onBoardDragEnd(event) {
-            console.log("onBoardDragEnd:" + JSON.stringify(event));
+        async onBoardDragEnd(event) {
             this.boardX = event.x;
             this.boardY = event.y;
+
+            await this.$nextTick();
+
+            //如果拖出界了就拉回到初始位置
+            let board = document.querySelector("#board");
+            let center = document.querySelector("#center");
+            if (event.x < -board.offsetWidth + boardEdgeSpace || event.x > center.offsetWidth - boardEdgeSpace) {
+                this.boardX = 0;
+                this.boardY = 0;
+            }
+            if (event.y < -board.offsetHeight + boardEdgeSpace || event.y > center.offsetHeight - boardEdgeSpace) {
+                this.boardX = 0;
+                this.boardY = 0;
+            }
         },
         onBoardContextMenu(event) {
             console.log("onBoardContextMenu:" + event.currentTarget.id)
         },
         onBoardMouseUp() {
-            console.log("onBoardMouseUp");
             if (this.tempNode == null) {
                 return;
             }
@@ -369,14 +395,14 @@ export default {
 
             this.$nextTick(() => {
                 this.drawCanvas();
+                this.saveTree();
             });
         },
         onTemplateSelect(event, tid) {
-            console.log("onTemplateSelect:" + event.clientX + "," + event.clientY);
             let container = document.querySelector("#container");
             let containerX = utils.getClientX(container);
             let containerY = utils.getClientY(container);
-            this.tempNode = {key: this.maxNodeKey++, tid: tid, x: event.clientX - containerX, y: event.clientY - containerY};
+            this.tempNode = {id: this.maxNodeId++, tid: tid, x: event.clientX - containerX, y: event.clientY - containerY};
 
             this.$nextTick(() => {
                 let tempNode = document.querySelector("#tempNode");
@@ -401,7 +427,6 @@ export default {
     position: absolute;
     width: 250px;
     height: 100%;
-    border: solid 1px red;
 }
 
 #right {
@@ -409,17 +434,21 @@ export default {
     width: 250px;
     height: 100%;
     right: 0;
-    border: solid 1px blue;
     user-select: none;
+}
+
+/*noinspection CssUnusedSymbol*/
+.el-table {
+    height: 100%;
 }
 
 #center {
     position: absolute;
-    left: 255px;
-    right: 255px;
+    left: 250px;
+    right: 250px;
     height: 100%;
     overflow: hidden;
-    border: solid 1px green;
+    border-top: solid 1px #dcdfe6;
 }
 
 #board {
