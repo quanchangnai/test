@@ -35,13 +35,8 @@ export default {
         }
     },
     watch: {
-        "x": {
-            handler(value) {
-                console.log("watch x:" + value);
-                this.left = value
-            },
-            deep:true,
-            immediate: true
+        x(value) {
+            this.left = value
         },
         y(value) {
             this.top = value

@@ -1,4 +1,6 @@
 import {ipcMain} from 'electron'
+import fs from 'fs'
+import path from 'path'
 
 ipcMain.handle("dev-tools", event => {
     if (event.sender.isDevToolsOpened()) {
@@ -9,32 +11,29 @@ ipcMain.handle("dev-tools", event => {
 });
 
 ipcMain.handle("load-templates", async () => {
-    let templates = [{id: 1, name: "节点模板1"}, {id: 2, name: "节点模板2"}];
-    return new Promise(resolve => resolve(templates));
+    return [{id: 1, name: "节点模板1"}, {id: 2, name: "节点模板2"}];
 });
 
 ipcMain.handle("load-trees", async () => {
-    let trees = [
+    return [
         {
-            id: 1,
-            name: "测试1",
-            tid: 1,
+            id: 1, name: "测试1", tid: 1, folded: false,
             children: [
-                {id: 2, tid: 1},
+                {id: 2, tid: 1, folded: false},
                 {
-                    id: 3, tid: 1,
+                    id: 3, tid: 1, folded: false,
                     children: [
                         {
-                            id: 5, tid: 1,
+                            id: 5, tid: 1, folded: false,
                             children: [
                                 {
-                                    id: 6, tid: 1,
+                                    id: 6, tid: 1, folded: false,
                                     children: [
                                         {
-                                            id: 7, tid: 1,
+                                            id: 7, tid: 1, folded: false,
                                             children: [
                                                 {
-                                                    id: 8, tid: 1,
+                                                    id: 8, tid: 1, folded: false,
                                                     children: [
                                                         {id: 9, tid: 1},
                                                     ]
@@ -51,18 +50,18 @@ ipcMain.handle("load-trees", async () => {
             ]
         },
         {
-            id: 2,
-            name: "测试2",
-            tid: 1,
+            id: 2, name: "测试2", tid: 1, folded: false,
             children: [
                 {id: 3, tid: 2},
             ]
         }
     ];
-    return new Promise(resolve => resolve(trees));
 });
 
 
-ipcMain.handle("save-tree", (event, tree) => {
+ipcMain.handle("save-tree", async (event, tree) => {
+    console.log("save-tree:" + fs.constants.F_OK);
     console.log(JSON.stringify(tree));
+    let workPath = path.resolve("./");
+    return {__dirname, __filename, workPath}
 });
