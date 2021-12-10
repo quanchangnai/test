@@ -35,7 +35,7 @@ ipcMain.handle("load-trees", async () => {
                                                 {
                                                     id: 8, tid: 1, folded: false,
                                                     children: [
-                                                        {id: 9, tid: 1},
+                                                        {id: 9, tid: 1, folded: false},
                                                     ]
                                                 },
                                             ]
@@ -46,13 +46,13 @@ ipcMain.handle("load-trees", async () => {
                         },
                     ]
                 },
-                {id: 4, tid: 1},
+                {id: 4, tid: 1, folded: false},
             ]
         },
         {
             id: 2, name: "测试2", tid: 1, folded: false,
             children: [
-                {id: 3, tid: 2},
+                {id: 3, tid: 2, folded: false},
             ]
         }
     ];

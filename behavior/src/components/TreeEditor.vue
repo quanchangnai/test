@@ -86,7 +86,6 @@ export default {
         this.templates = await ipcRenderer.invoke("load-templates");
         this.trees = await ipcRenderer.invoke("load-trees");
         this.tree = this.trees[0];
-        this.buildNodes(this.tree);
         await this.$nextTick();//等待界面渲染
         this.drawCanvas();
         window.addEventListener("resize", this.drawCanvas);
@@ -99,39 +98,46 @@ export default {
             templates: null,
             trees: null,
             tree: null,
-            nodes: [],
             maxNodeId: 0,
             tempNode: null,
             boardX: 0,
             boardY: 0,
         }
     },
+    computed: {
+        nodes() {
+            let result = [];
+            let build = node => {
+                if (node == null) {
+                    return;
+                }
+                if (node.x === undefined) {
+                    this.$set(node, "x", 0);
+                }
+                if (node.y === undefined) {
+                    this.$set(node, "y", 0);
+                }
+                result.push(node);
+                this.maxNodeId = Math.max(this.maxNodeId, node.id);
+
+                if (node.children && !node.folded) {
+                    for (let child of node.children) {
+                        child.parent = node;
+                        build(child);
+                    }
+                }
+            };
+
+            build(this.tree);
+            return result;
+        }
+    },
     methods: {
         async onTreeSelect(tree) {
             this.tree = tree;
-            this.nodes = [];
             this.maxNodeId = 0;
             await this.$nextTick();//等待界面删除旧节点
-            this.buildNodes(this.tree);
-            await this.$nextTick();//等待界面渲染新节点
             this.drawCanvas();
-        },
-        buildNodes(node) {
-            if (node == null) {
-                return;
-            }
-
-            this.$set(node, "x", 0);
-            this.$set(node, "y", 0);
-            this.nodes.push(node);
-            this.maxNodeId = Math.max(this.maxNodeId, node.id);
-
-            if (node.children) {
-                for (let child of node.children) {
-                    child.parent = node;
-                    this.buildNodes(child);
-                }
-            }
         },
         drawCanvas() {
             this.calcBounds();
@@ -265,7 +271,7 @@ export default {
             const moveTree = node0 => {
                 node0.x += moveX;
                 node0.y += moveY;
-                if (node0.children && !node0.folded) {
+                if (node0.children) {
                     for (let child of node0.children) {
                         moveTree(child);
                     }
@@ -364,6 +370,7 @@ export default {
         },
         onNodeFold(node) {
             node.folded = !node.folded;
+            this.$nextTick(this.drawCanvas);
         },
         async onBoardDragEnd(event) {
             this.boardX = event.x;
