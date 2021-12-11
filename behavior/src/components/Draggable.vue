@@ -70,7 +70,6 @@ export default {
 
             this.dragging = false;
             window.removeEventListener("mousemove", this.onMouseMove);
-
             this.$emit("drag-end", {x: this.left, y: this.top, payload: this.payload});
         }
     }

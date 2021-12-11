@@ -86,6 +86,7 @@ export default {
         this.templates = await ipcRenderer.invoke("load-templates");
         this.trees = await ipcRenderer.invoke("load-trees");
         this.tree = this.trees[0];
+        this.$refs.treesTable.setCurrentRow(this.tree);
         await this.$nextTick();//等待界面渲染
         this.drawCanvas();
         window.addEventListener("resize", this.drawCanvas);
@@ -296,7 +297,7 @@ export default {
             let minDistance = -1;
 
             const find = node0 => {
-                if (!node0 || node0 === node) {
+                if (!node0 || node0 === node || node0.folded) {
                     return;
                 }
                 let x0 = deltaX + node0.x + node0.selfWidth - nodeSpaceX;
@@ -414,9 +415,9 @@ export default {
         },
         onTemplateSelect(event, tid) {
             let container = document.querySelector("#container");
-            let containerX = utils.getClientX(container);
-            let containerY = utils.getClientY(container);
-            this.tempNode = {id: ++this.maxNodeId, tid: tid, x: event.clientX - containerX, y: event.clientY - containerY};
+            let x = event.clientX - utils.getClientX(container);
+            let y = event.clientY - utils.getClientY(container);
+            this.tempNode = {id: ++this.maxNodeId, tid: tid, x, y, folded: false};
 
             this.$nextTick(() => {
                 let tempNode = document.querySelector("#tempNode");
