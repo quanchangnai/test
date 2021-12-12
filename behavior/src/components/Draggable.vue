@@ -3,9 +3,7 @@
          class="draggable"
          :style="{left: left + 'px', top: top + 'px'}"
          @mousedown.left.stop="onMouseDown">
-        <slot :pos="{x:left,y:top}">
-            <div>测试:({{ left }},{{ top }})</div>
-        </slot>
+        <slot/>
     </div>
 </template>
 
@@ -58,9 +56,9 @@ export default {
             if (!this.dragging) {
                 return
             }
-
-            this.left = this.left + event.movementX;
-            this.top = this.top + event.movementY;
+            //devicePixelRatio:屏幕缩放比例
+            this.left = this.left + event.movementX / devicePixelRatio;
+            this.top = this.top + event.movementY / devicePixelRatio;
             this.$emit("dragging", {x: this.left, y: this.top, payload: this.payload});
         },
         onMouseUp() {
