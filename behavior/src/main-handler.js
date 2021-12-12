@@ -17,25 +17,25 @@ ipcMain.handle("load-templates", async () => {
 ipcMain.handle("load-trees", async () => {
     return [
         {
-            id: 1, name: "测试1", tid: 1, folded: false,
+            id: 1, name: "测试1", tid: 1, collapsed: false,
             children: [
-                {id: 2, tid: 1, folded: false},
+                {id: 2, tid: 1, collapsed: false},
                 {
-                    id: 3, tid: 1, folded: false,
+                    id: 3, tid: 1, collapsed: false,
                     children: [
                         {
-                            id: 5, tid: 1, folded: false,
+                            id: 5, tid: 1, collapsed: false,
                             children: [
                                 {
-                                    id: 6, tid: 1, folded: false,
+                                    id: 6, tid: 1, collapsed: false,
                                     children: [
                                         {
-                                            id: 7, tid: 1, folded: false,
+                                            id: 7, tid: 1, collapsed: false,
                                             children: [
                                                 {
-                                                    id: 8, tid: 1, folded: false,
+                                                    id: 8, tid: 1, collapsed: false,
                                                     children: [
-                                                        {id: 9, tid: 1, folded: false},
+                                                        {id: 9, tid: 1, collapsed: false},
                                                     ]
                                                 },
                                             ]
@@ -46,13 +46,13 @@ ipcMain.handle("load-trees", async () => {
                         },
                     ]
                 },
-                {id: 4, tid: 1, folded: false},
+                {id: 4, tid: 1, collapsed: false},
             ]
         },
         {
-            id: 2, name: "测试2", tid: 1, folded: false,
+            id: 2, name: "测试2", tid: 1, collapsed: false,
             children: [
-                {id: 3, tid: 2, folded: false},
+                {id: 3, tid: 2, collapsed: false},
             ]
         }
     ];

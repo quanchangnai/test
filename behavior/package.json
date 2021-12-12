@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "run": "vue-cli-service electron:serve",
+    "run": "vue-cli-service electron:serve --inspect",
     "build": "vue-cli-service electron:build"
   },
   "main": "background.js",

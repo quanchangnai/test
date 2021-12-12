@@ -35,11 +35,30 @@
                            @drag-end="onNodeDragEnd"
                            @contextmenu.native="onNodeContextMenu">
                     <template>
-                        <div class="node" :ref="'node'+node.id">tid:{{ node.tid }},id:{{ node.id }}</div>
+                        <div class="node" :ref="'node'+node.id">
+                            <div style="padding-right: 5px">
+                                <span>节点:{{ node.tid }}-{{ node.id }}</span>
+                            </div>
+                            <div v-if="node.showedParams" style="border-top: solid cadetblue 1px;">
+                                参数1:aaaaaaaaa{{ node.id }}
+                            </div>
+                            <div v-if="node.showedParams">
+                                参数2:bbbbbbbbb{{ node.id }}
+                            </div>
+                            <div v-if="node.showedParams">
+                                参数3:cccccccc{{ node.id }}
+                            </div>
+                        </div>
+                        <div :class="node.showedParams?'el-icon-arrow-up':'el-icon-arrow-down'"
+                             style=" position: absolute;top: 7px;left: 5px;cursor: default"
+                             @mousedown.stop
+                             @click="()=>onNodeShowParams(node)"/>
                         <div v-if="node.children&&node.children.length"
-                             @click="()=>onNodeFold(node)"
-                             :class="node.folded?'el-icon-circle-plus-outline':'el-icon-remove-outline'"
-                             class="node-fold-icon"/>
+                             @mousedown.stop
+                             @click="()=>onNodeCollapse(node)"
+                             :title="node.collapsed?'展开子树':'收起子树'"
+                             :class="node.collapsed?'el-icon-circle-plus-outline':'el-icon-remove-outline'"
+                             class="node-collapse-icon"/>
                     </template>
                 </draggable>
             </draggable>
@@ -75,8 +94,8 @@ import Draggable from "./Draggable";
 import utils from "../utils";
 import {ipcRenderer} from 'electron'
 
-const nodeSpaceX = 60;//节点x轴间隔空间
-const nodeSpaceY = 40;//节点y轴间隔空间
+const nodeSpaceX = 50;//节点x轴间隔空间
+const nodeSpaceY = 30;//节点y轴间隔空间
 const boardEdgeSpace = 100;//画板边缘空间
 
 export default {
@@ -121,7 +140,7 @@ export default {
                 result.push(node);
                 this.maxNodeId = Math.max(this.maxNodeId, node.id);
 
-                if (node.children && !node.folded) {
+                if (node.children && !node.collapsed) {
                     for (let child of node.children) {
                         child.parent = node;
                         build(child);
@@ -168,25 +187,26 @@ export default {
             node.selfWidth = element.offsetWidth + nodeSpaceX;
             node.selfHeight = element.offsetHeight + nodeSpaceY;
 
-            if (!node.children || !node.children.length || node.folded) {
+            if (!node.children || !node.children.length || node.collapsed) {
                 node.treeWidth = node.selfWidth;
                 node.treeHeight = node.selfHeight;
                 return;
             }
 
-            let maxChildTreeWidth = 0;
-            let totalChildTreeHeight = 0;
+            let maxChildWidth = 0;
+            let childrenHeight = 0;
 
             for (let child of node.children) {
                 this.calcBounds(child);
-                if (child.treeWidth > maxChildTreeWidth) {
-                    maxChildTreeWidth = child.treeWidth;
+                if (child.treeWidth > maxChildWidth) {
+                    maxChildWidth = child.treeWidth;
                 }
-                totalChildTreeHeight += child.treeHeight;
+                childrenHeight += child.treeHeight;
             }
 
-            node.treeWidth = node.selfWidth + maxChildTreeWidth;
-            node.treeHeight = Math.max(node.selfHeight, totalChildTreeHeight)
+            node.treeWidth = node.selfWidth + maxChildWidth;
+            node.treeHeight = Math.max(node.selfHeight, childrenHeight);
+            node.childrenHeight = childrenHeight;
         },
         alignTree(node = this.tree, lastY = boardEdgeSpace) {
             if (!node) {
@@ -198,20 +218,31 @@ export default {
                 node.x = boardEdgeSpace;
             }
 
-            node.y = lastY;
+            if (!node.children || !node.children.length || node.collapsed) {
+                node.y = lastY;
+                return;
+            }
 
-            if (node.children && node.children.length && !node.folded) {
+            if (node.treeHeight <= node.childrenHeight) {
                 for (let child of node.children) {
                     this.alignTree(child, lastY);
                     lastY += child.treeHeight;
                 }
                 if (node.children.length > 1) {
-                    node.y = (node.children[0].y + node.children[node.children.length - 1].y) / 2;
+                    let lastChild = node.children[node.children.length - 1];
+                    node.y = (node.children[0].y + lastChild.y + lastChild.selfHeight - node.selfHeight) / 2;
                 } else {
-                    node.y = node.children[0].y;
+                    node.y = node.children[0].y + node.children[0].selfHeight / 2 - node.selfHeight / 2;
+                }
+            } else {
+                // 父节点比所有子树高度之和还高
+                node.y = lastY;
+                lastY += (node.selfHeight - node.childrenHeight) / 2;
+                for (let child of node.children) {
+                    this.alignTree(child, lastY);
+                    lastY += child.treeHeight;
                 }
             }
-
         },
         drawLines() {
             const canvas = document.querySelector("#canvas");
@@ -229,12 +260,14 @@ export default {
                 context.stroke();
             };
 
+            const nodeFoldIconWidth = 14;//收起、展开图标宽度
+
             const lineToChildren = node => {
-                if (!node || !node.children || node.folded) {
+                if (!node || !node.children || node.collapsed) {
                     return;
                 }
 
-                let x1 = node.x + node.selfWidth - nodeSpaceX + 14;
+                let x1 = node.x + node.selfWidth - nodeSpaceX + nodeFoldIconWidth;
                 let y1 = node.y + (node.selfHeight - nodeSpaceY) / 2;
 
                 for (let child of node.children) {
@@ -254,8 +287,12 @@ export default {
 
             if (this.tempNode && this.tempNode.parent) {
                 context.strokeStyle = "red";
-                let x1 = this.tempNode.parent.x + this.tempNode.parent.selfWidth - nodeSpaceX;
-                let y1 = this.tempNode.parent.y + (this.tempNode.parent.selfHeight - nodeSpaceY) / 2;
+                let tempParentNode = this.tempNode.parent;
+                let x1 = tempParentNode.x + tempParentNode.selfWidth - nodeSpaceX;
+                if (tempParentNode.children && tempParentNode.children.length) {
+                    x1 += nodeFoldIconWidth;
+                }
+                let y1 = tempParentNode.y + (tempParentNode.selfHeight - nodeSpaceY) / 2;
                 let x2 = this.tempNode.x - document.querySelector("#left").offsetWidth - this.boardX;
                 let y2 = this.tempNode.y + (this.tempNode.selfHeight - nodeSpaceY) / 2 - this.boardY;
                 drawLine(x1, y1, x2, y2);
@@ -292,17 +329,21 @@ export default {
                 deltaY = this.boardY;
             }
 
+            let x = node.x;
+            let y = node.y + (node.selfHeight - nodeSpaceY) / 2;
+
             //寻找最近的的节点作为父节点
             let nearestNode = null;
             let minDistance = -1;
 
             const find = node0 => {
-                if (!node0 || node0 === node || node0.folded) {
+                if (!node0 || node0 === node || node0.collapsed) {
                     return;
                 }
                 let x0 = deltaX + node0.x + node0.selfWidth - nodeSpaceX;
                 let y0 = deltaY + node0.y + (node0.selfHeight - nodeSpaceY) / 2;
-                let distance = (node.x - x0) ** 2 + (node.y - y0) ** 2;
+
+                let distance = (x - x0) ** 2 + (y - y0) ** 2;
                 if (minDistance < 0 || distance < minDistance) {
                     minDistance = distance;
                     nearestNode = node0;
@@ -369,8 +410,12 @@ export default {
         onNodeContextMenu(event) {
             console.log("onNodeContextMenu:" + event.currentTarget.id)
         },
-        onNodeFold(node) {
-            node.folded = !node.folded;
+        onNodeCollapse(node) {
+            node.collapsed = !node.collapsed;
+            this.$nextTick(this.drawCanvas);
+        },
+        onNodeShowParams(node) {
+            this.$set(node, "showedParams", !node.showedParams);
             this.$nextTick(this.drawCanvas);
         },
         async onBoardDragEnd(event) {
@@ -417,7 +462,7 @@ export default {
             let container = document.querySelector("#container");
             let x = event.clientX - utils.getClientX(container);
             let y = event.clientY - utils.getClientY(container);
-            this.tempNode = {id: ++this.maxNodeId, tid: tid, x, y, folded: false};
+            this.tempNode = {id: ++this.maxNodeId, tid: tid, x, y, collapsed: false};
 
             this.$nextTick(() => {
                 let tempNode = document.querySelector("#tempNode");
@@ -482,13 +527,12 @@ export default {
 }
 
 .node {
-    min-width: 120px;
-    height: 40px;
+    min-width: 60px;
     background-color: #99ccff;
-    text-align: center;
-    line-height: 40px;
+    line-height: 30px;
     border: 1px solid #98a5e9;
     border-radius: 5px;
+    padding: 0 10px 0 23px;
 }
 
 .node:hover {
@@ -496,9 +540,9 @@ export default {
     background-color: #00981a;
 }
 
-.node-fold-icon {
+.node-collapse-icon {
     position: absolute;
-    top: calc(50% - 8px);
+    top: calc(50% - 7px);
     left: calc(100% - 1px);
     cursor: default
 }
