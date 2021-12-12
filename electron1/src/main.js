@@ -23,6 +23,6 @@ app.on('window-all-closed', function () {
     app.quit();
 });
 
-ipcMain.on("test2", (evvent, arg) => {
+ipcMain.on("test2", (event, arg) => {
     console.log("test2:" + arg);
 });

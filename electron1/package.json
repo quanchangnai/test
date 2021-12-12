@@ -4,7 +4,7 @@
     "description": "electron测试",
     "main": "src/main.js",
     "scripts": {
-        "start": "electron .",
+        "start": "electron --inspect .",
         "test": "echo \"Error: no test specified\" && exit 1",
         "dist": "electron-builder --dir"
     },
@@ -12,6 +12,7 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "electron": "^9.0.4"
+        "electron": "^9.0.4",
+        "electron-builder": "^22.14.5"
     }
 }
