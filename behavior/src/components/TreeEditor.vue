@@ -32,7 +32,8 @@
                            @dragging="onNodeDragging"
                            @drag-end="onNodeDragEnd"
                            @detail="drawCanvas"
-                           @collapse="drawCanvas"/>
+                           @collapse="drawCanvas"
+                           @delete="onNodeDelete"/>
             </draggable>
         </div>
         <div id="right">
@@ -42,7 +43,7 @@
                         <el-input clearable size="medium" placeholder="输入关键字搜索" prefix-icon="el-icon-search"/>
                     </template>
                     <template #default="{row}">
-                        <div style="cursor: pointer;user-select: none" @mousedown="e=>onTemplateSelect(e,row.id)"> {{ row.name }}</div>
+                        <div style="cursor: grab;user-select: none;" @mousedown="e=>onTemplateSelect(e,row.id)"> {{ row.name }}</div>
                     </template>
                 </el-table-column>
             </el-table>
@@ -269,13 +270,51 @@ export default {
                 drawLine(x1, y1, x2, y2);
             }
         },
-        onNodeDragging(event) {
-            this.linkParentNode(event.node);
+        onNodeDragging(node) {
+            this.linkParentNode(node);
             this.drawLines();
         },
         async onNodeDragEnd() {
             await this.drawCanvas();
             this.saveTree();
+        },
+        onNodeDelete(node) {
+            if (node === this.tree) {
+                this.tree = null;
+            } else {
+                node.parent.children.splice(node.parent.children.indexOf(node), 1);
+            }
+            this.drawCanvas();
+        },
+        linkParentNode(node, parentNode) {
+            if (parentNode == null) {
+                parentNode = this.findParentNode(node);
+            }
+
+            if (parentNode == null) {
+                return;
+            }
+
+            if (node === this.tempNode) {
+                node.parent = parentNode;
+                return;
+            }
+
+            //关联父子节点
+            if (node.parent && node.parent.children) {
+                let nodeIndex = node.parent.children.indexOf(node);
+                if (nodeIndex >= 0) {
+                    node.parent.children.splice(nodeIndex, 1);
+                }
+            }
+            node.parent = parentNode;
+            if (!parentNode.children) {
+                this.$set(parentNode, "children", []);
+            }
+            parentNode.children.push(node);
+
+            //按y轴排序兄弟节点
+            parentNode.children.sort((n1, n2) => n1.y - n2.y);
         },
         findParentNode(node) {
             let deltaX = 0;
@@ -314,36 +353,6 @@ export default {
             find(this.tree);
 
             return nearestNode;
-        },
-        linkParentNode(node, parentNode) {
-            if (parentNode == null) {
-                parentNode = this.findParentNode(node);
-            }
-
-            if (parentNode == null) {
-                return;
-            }
-
-            if (node === this.tempNode) {
-                node.parent = parentNode;
-                return;
-            }
-
-            //关联父子节点
-            if (node.parent && node.parent.children) {
-                let nodeIndex = node.parent.children.indexOf(node);
-                if (nodeIndex >= 0) {
-                    node.parent.children.splice(nodeIndex, 1);
-                }
-            }
-            node.parent = parentNode;
-            if (!parentNode.children) {
-                this.$set(parentNode, "children", []);
-            }
-            parentNode.children.push(node);
-
-            //按y轴排序兄弟节点
-            parentNode.children.sort((n1, n2) => n1.y - n2.y);
         },
         saveTree() {
             let build = node => {
@@ -445,6 +454,7 @@ export default {
     left: 250px;
     right: 250px;
     height: 100%;
+    box-sizing: border-box;
     overflow: hidden;
     border-top: solid 1px #dcdfe6;
 }

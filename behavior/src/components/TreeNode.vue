@@ -5,7 +5,8 @@
                :style="{'pointer-events':temp?'none':'auto'}"
                @drag-start="onDragStart"
                @dragging="onDragging"
-               @drag-end="onDragEnd">
+               @drag-end="onDragEnd"
+               @contextmenu.native.stop="onContextMenu">
         <template>
             <div v-if="temp" class="content" ref="content">
                 tid:{{ node.tid }},id:{{ node.id }}
@@ -14,15 +15,17 @@
                 <div style="padding-right: 5px">
                     <span>节点:{{ node.tid }}-{{ node.id }}</span>
                 </div>
-                <div v-if="node.detailed" style="border-top: solid cadetblue 1px;">
-                    参数1:aaaaaaaaa{{ node.id }}
-                </div>
-                <div v-if="node.detailed">
-                    参数2:bbbbbbbbb{{ node.id }}
-                </div>
-                <div v-if="node.detailed">
-                    参数3:cccccccc{{ node.id }}
-                </div>
+                <template v-if="node.detailed">
+                    <div style="border-top: solid cadetblue 1px;">
+                        参数1:aaaaaaaaa{{ node.id }}
+                    </div>
+                    <div>
+                        参数2:bbbbbbbbb{{ node.id }}
+                    </div>
+                    <div>
+                        参数3:cccccccc{{ node.id }}
+                    </div>
+                </template>
             </div>
             <div :title="node.detailed?'隐藏节点详情':'显示节点详情'"
                  class="detail-icon"
@@ -35,16 +38,21 @@
                  :class="node.collapsed?'el-icon-circle-plus-outline':'el-icon-remove-outline'"
                  @mousedown.stop
                  @click="onCollapse"/>
+            <context-menu
+                    ref="contextMenu"
+                    :items="menuItems"
+                    @item-click="onContextMenuItemClick"/>
         </template>
     </draggable>
 </template>
 
 <script>
 import Draggable from './Draggable'
+import ContextMenu from './ContextMenu'
 
 export default {
     name: "TreeNode",
-    components: {Draggable},
+    components: {Draggable, ContextMenu},
     props: {
         node: Object,
         temp: {
@@ -54,6 +62,17 @@ export default {
     },
     data() {
         return {};
+    },
+    computed: {
+        menuItems() {
+            let items = [];
+            items.push(this.node.detailed ? '隐藏节点详情' : '显示节点详情');
+            items.push('删除节点');
+            if (this.node.children && this.node.children.length) {
+                items.push(this.node.collapsed ? '展开子树' : '收起子树');
+            }
+            return items;
+        }
     },
     methods: {
         onDragStart() {
@@ -76,11 +95,11 @@ export default {
 
             move(this.node);
 
-            this.$emit("dragging", {node: this.node});
+            this.$emit("dragging", this.node);
         },
         onDragEnd() {
             this.node.dragging = false;
-            this.$emit("drag-end", {node: this.node});
+            this.$emit("drag-end", this.node);
         },
         onDetail() {
             this.$set(this.node, "detailed", !this.node.detailed);
@@ -92,6 +111,18 @@ export default {
         },
         content() {
             return this.$refs.content;
+        },
+        onContextMenu(event) {
+            this.$refs.contextMenu.show(event.clientX, event.clientY);
+        },
+        onContextMenuItemClick(item) {
+            if (item === 0) {
+                this.onDetail();
+            } else if (item === 1) {
+                this.$emit("delete", this.node);
+            } else if (item === 2) {
+                this.onCollapse();
+            }
         }
     }
 
@@ -106,24 +137,28 @@ export default {
     border: 1px solid #98a5e9;
     border-radius: 5px;
     padding: 0 10px 0 23px;
+    z-index: 10;
 }
 
 .content:hover {
-    cursor: pointer;
-    background-color: #00981a;
+    cursor: grab;
 }
 
 .detail-icon {
     position: absolute;
-    top: 7px;
-    left: 5px;
-    cursor: default
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 24px;
+    padding-top: 7px;
+    padding-left: 4px;
+    cursor: pointer;
 }
 
 .collapse-icon {
     position: absolute;
     top: calc(50% - 7px);
     left: calc(100% - 1px);
-    cursor: default
+    cursor: pointer;
 }
 </style>
