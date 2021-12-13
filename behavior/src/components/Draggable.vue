@@ -1,6 +1,5 @@
 <template>
-    <div ref="draggable"
-         class="draggable"
+    <div class="draggable"
          :style="{left: left + 'px', top: top + 'px'}"
          @mousedown.left.stop="onMouseDown">
         <slot/>

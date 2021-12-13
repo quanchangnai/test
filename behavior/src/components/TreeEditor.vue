@@ -25,42 +25,14 @@
                        @contextmenu.native="onBoardContextMenu"
                        @mouseup.native="onBoardMouseUp">
                 <canvas id="canvas" @contextmenu.prevent/>
-                <draggable v-for="node in nodes"
+                <tree-node v-for="node in nodes"
                            :key="node.id"
-                           :x="node.x"
-                           :y="node.y"
-                           :payload="node"
-                           @drag-start="onNodeDragStart"
+                           :ref="'node'+node.id"
+                           :node="node"
                            @dragging="onNodeDragging"
                            @drag-end="onNodeDragEnd"
-                           @contextmenu.native="onNodeContextMenu">
-                    <template>
-                        <div class="node" :ref="'node'+node.id">
-                            <div style="padding-right: 5px">
-                                <span>节点:{{ node.tid }}-{{ node.id }}</span>
-                            </div>
-                            <div v-if="node.showedParams" style="border-top: solid cadetblue 1px;">
-                                参数1:aaaaaaaaa{{ node.id }}
-                            </div>
-                            <div v-if="node.showedParams">
-                                参数2:bbbbbbbbb{{ node.id }}
-                            </div>
-                            <div v-if="node.showedParams">
-                                参数3:cccccccc{{ node.id }}
-                            </div>
-                        </div>
-                        <div :class="node.showedParams?'el-icon-arrow-up':'el-icon-arrow-down'"
-                             style=" position: absolute;top: 7px;left: 5px;cursor: default"
-                             @mousedown.stop
-                             @click="()=>onNodeShowParams(node)"/>
-                        <div v-if="node.children&&node.children.length"
-                             @mousedown.stop
-                             @click="()=>onNodeCollapse(node)"
-                             :title="node.collapsed?'展开子树':'收起子树'"
-                             :class="node.collapsed?'el-icon-circle-plus-outline':'el-icon-remove-outline'"
-                             class="node-collapse-icon"/>
-                    </template>
-                </draggable>
+                           @detail="drawCanvas"
+                           @collapse="drawCanvas"/>
             </draggable>
         </div>
         <div id="right">
@@ -75,22 +47,18 @@
                 </el-table-column>
             </el-table>
         </div>
-        <draggable id="tempNode"
-                   v-if="tempNode!=null"
-                   :x="tempNode.x"
-                   :y="tempNode.y"
-                   :payload="tempNode"
-                   :initDragging="true"
-                   @drag-start="onNodeDragStart"
+        <tree-node v-if="tempNode!=null"
+                   :ref="'node'+tempNode.id"
+                   :node="tempNode"
+                   :temp="true"
                    @dragging="onNodeDragging"
-                   @drag-end="onNodeDragEnd">
-            <div class="node" :ref="'node'+tempNode.id">tid:{{ tempNode.tid }},id:{{ tempNode.id }}</div>
-        </draggable>
+                   @drag-end="onNodeDragEnd"/>
     </div>
 </template>
 
 <script>
 import Draggable from "./Draggable";
+import TreeNode from "./TreeNode";
 import utils from "../utils";
 import {ipcRenderer} from 'electron'
 
@@ -100,14 +68,13 @@ const boardEdgeSpace = 100;//画板边缘空间
 
 export default {
     name: "TreeEditor",
-    components: {Draggable},
+    components: {TreeNode, Draggable},
     async created() {
         this.templates = await ipcRenderer.invoke("load-templates");
         this.trees = await ipcRenderer.invoke("load-trees");
         this.tree = this.trees[0];
         this.$refs.treesTable.setCurrentRow(this.tree);
-        await this.$nextTick();//等待界面渲染
-        this.drawCanvas();
+        await this.drawCanvas();
         window.addEventListener("resize", this.drawCanvas);
     },
     destroyed() {
@@ -149,17 +116,20 @@ export default {
             };
 
             build(this.tree);
+
             return result;
         }
     },
     methods: {
-        async onTreeSelect(tree) {
+        onTreeSelect(tree) {
             this.tree = tree;
             this.maxNodeId = 0;
-            await this.$nextTick();//等待界面删除旧节点
             this.drawCanvas();
         },
-        drawCanvas() {
+        async drawCanvas() {
+            await this.$nextTick(); //等待界面刷新
+            await this.$nextTick();//节点有时候会先被撑大
+
             this.calcBounds();
 
             if (this.tree) {
@@ -177,15 +147,16 @@ export default {
             }
 
             //坑，v-for中的ref是个数组
-            let element;
+            let nodeContent;
             if (node === this.tempNode) {
-                element = this.$refs["node" + node.id];
+                nodeContent = this.$refs["node" + node.id].content();
             } else {
-                element = this.$refs["node" + node.id][0];
+                nodeContent = this.$refs["node" + node.id][0].content();
             }
+
             //界面渲染完成之后才能取到元素大小
-            node.selfWidth = element.offsetWidth + nodeSpaceX;
-            node.selfHeight = element.offsetHeight + nodeSpaceY;
+            node.selfWidth = nodeContent.offsetWidth + nodeSpaceX;
+            node.selfHeight = nodeContent.offsetHeight + nodeSpaceY;
 
             if (!node.children || !node.children.length || node.collapsed) {
                 node.treeWidth = node.selfWidth;
@@ -260,14 +231,14 @@ export default {
                 context.stroke();
             };
 
-            const nodeFoldIconWidth = 14;//收起、展开图标宽度
+            const nodeCollapseIconWidth = 14;//节点收起子树图标宽度
 
             const lineToChildren = node => {
                 if (!node || !node.children || node.collapsed) {
                     return;
                 }
 
-                let x1 = node.x + node.selfWidth - nodeSpaceX + nodeFoldIconWidth;
+                let x1 = node.x + node.selfWidth - nodeSpaceX + nodeCollapseIconWidth;
                 let y1 = node.y + (node.selfHeight - nodeSpaceY) / 2;
 
                 for (let child of node.children) {
@@ -290,7 +261,7 @@ export default {
                 let tempParentNode = this.tempNode.parent;
                 let x1 = tempParentNode.x + tempParentNode.selfWidth - nodeSpaceX;
                 if (tempParentNode.children && tempParentNode.children.length) {
-                    x1 += nodeFoldIconWidth;
+                    x1 += nodeCollapseIconWidth;
                 }
                 let y1 = tempParentNode.y + (tempParentNode.selfHeight - nodeSpaceY) / 2;
                 let x2 = this.tempNode.x - document.querySelector("#left").offsetWidth - this.boardX;
@@ -298,28 +269,13 @@ export default {
                 drawLine(x1, y1, x2, y2);
             }
         },
-        onNodeDragStart(event) {
-            event.payload.dragging = true;
-        },
         onNodeDragging(event) {
-            let node = event.payload;
-            const moveX = event.x - node.x;
-            const moveY = event.y - node.y;
-
-            const moveTree = node0 => {
-                node0.x += moveX;
-                node0.y += moveY;
-                if (node0.children) {
-                    for (let child of node0.children) {
-                        moveTree(child);
-                    }
-                }
-            };
-            moveTree(node);
-
-            this.linkParentNode(node);
-
+            this.linkParentNode(event.node);
             this.drawLines();
+        },
+        async onNodeDragEnd() {
+            await this.drawCanvas();
+            this.saveTree();
         },
         findParentNode(node) {
             let deltaX = 0;
@@ -363,6 +319,7 @@ export default {
             if (parentNode == null) {
                 parentNode = this.findParentNode(node);
             }
+
             if (parentNode == null) {
                 return;
             }
@@ -381,42 +338,26 @@ export default {
             }
             node.parent = parentNode;
             if (!parentNode.children) {
-                parentNode.children = [];
+                this.$set(parentNode, "children", []);
             }
             parentNode.children.push(node);
 
             //按y轴排序兄弟节点
             parentNode.children.sort((n1, n2) => n1.y - n2.y);
         },
-        onNodeDragEnd(event) {
-            event.payload.dragging = false;
-            this.drawCanvas();
-            this.saveTree();
-        },
         saveTree() {
-            let buildTree = tree => {
-                let resultTree = {id: tree.id, name: tree.name, tid: tree.tid};
-                if (tree.children) {
-                    resultTree.children = [];
-                    for (let child of tree.children) {
-                        resultTree.children.push(buildTree(child))
+            let build = node => {
+                let result = {id: node.id, name: node.name, tid: node.tid};
+                if (node.children) {
+                    result.children = [];
+                    for (let child of node.children) {
+                        result.children.push(build(child))
                     }
                 }
-                return resultTree;
+                return result;
             };
 
-            ipcRenderer.invoke("save-tree", buildTree(this.tree));
-        },
-        onNodeContextMenu(event) {
-            console.log("onNodeContextMenu:" + event.currentTarget.id)
-        },
-        onNodeCollapse(node) {
-            node.collapsed = !node.collapsed;
-            this.$nextTick(this.drawCanvas);
-        },
-        onNodeShowParams(node) {
-            this.$set(node, "showedParams", !node.showedParams);
-            this.$nextTick(this.drawCanvas);
+            ipcRenderer.invoke("save-tree", build(this.tree));
         },
         async onBoardDragEnd(event) {
             this.boardX = event.x;
@@ -439,13 +380,12 @@ export default {
         onBoardContextMenu(event) {
             console.log("onBoardContextMenu:" + event.currentTarget.id)
         },
-        onBoardMouseUp() {
+        async onBoardMouseUp() {
             if (this.tempNode == null) {
                 return;
             }
             let tempNode = this.tempNode;
             this.tempNode = null;
-            this.nodes.push(tempNode);
             tempNode.dragging = false;
             if (tempNode.parent) {
                 this.linkParentNode(tempNode, tempNode.parent);
@@ -453,10 +393,8 @@ export default {
                 this.tree = tempNode;
             }
 
-            this.$nextTick(() => {
-                this.drawCanvas();
-                this.saveTree();
-            });
+            await this.drawCanvas();
+            this.saveTree();
         },
         onTemplateSelect(event, tid) {
             let container = document.querySelector("#container");
@@ -465,9 +403,9 @@ export default {
             this.tempNode = {id: ++this.maxNodeId, tid: tid, x, y, collapsed: false};
 
             this.$nextTick(() => {
-                let tempNode = document.querySelector("#tempNode");
-                this.tempNode.x -= tempNode.offsetWidth / 2;
-                this.tempNode.y -= tempNode.offsetHeight / 2;
+                let tempNodeContent = this.$refs["node" + this.tempNode.id].content();
+                this.tempNode.x -= tempNodeContent.offsetWidth / 2;
+                this.tempNode.y -= tempNodeContent.offsetHeight / 2;
                 this.calcBounds(this.tempNode);
                 this.linkParentNode(this.tempNode);
                 this.drawLines();
@@ -526,30 +464,4 @@ export default {
      background-size: 15px 15px;*/
 }
 
-.node {
-    min-width: 60px;
-    background-color: #99ccff;
-    line-height: 30px;
-    border: 1px solid #98a5e9;
-    border-radius: 5px;
-    padding: 0 10px 0 23px;
-}
-
-.node:hover {
-    cursor: pointer;
-    background-color: #00981a;
-}
-
-.node-collapse-icon {
-    position: absolute;
-    top: calc(50% - 7px);
-    left: calc(100% - 1px);
-    cursor: default
-}
-
-#tempNode {
-    /*鼠标事件穿透该div*/
-    pointer-events: none;
-    z-index: 1;
-}
 </style>
