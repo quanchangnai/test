@@ -27,21 +27,19 @@
                     </div>
                 </template>
             </div>
-            <div :title="node.detailed?'隐藏节点详情':'显示节点详情'"
-                 class="detail-icon"
+            <div class="detail-icon"
                  :class="node.detailed?'el-icon-arrow-up':'el-icon-arrow-down'"
                  @mousedown.stop
                  @click="onDetail"/>
             <div v-if="node.children&&node.children.length"
-                 :title="node.collapsed?'展开子树':'收起子树'"
                  class="collapse-icon"
                  :class="node.collapsed?'el-icon-circle-plus-outline':'el-icon-remove-outline'"
                  @mousedown.stop
                  @click="onCollapse"/>
             <context-menu
-                    ref="contextMenu"
-                    :items="menuItems"
-                    @item-click="onContextMenuItemClick"/>
+                ref="contextMenu"
+                :items="menuItems"
+                @item-click="onContextMenuItemClick"/>
         </template>
     </draggable>
 </template>
@@ -66,7 +64,7 @@ export default {
     computed: {
         menuItems() {
             let items = [];
-            items.push(this.node.detailed ? '隐藏节点详情' : '显示节点详情');
+            items.push(this.node.detailed ? '隐藏详情' : '显示详情');
             items.push('删除节点');
             if (this.node.children && this.node.children.length) {
                 items.push(this.node.collapsed ? '展开子树' : '收起子树');

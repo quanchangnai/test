@@ -128,19 +128,27 @@ export default {
             this.drawCanvas();
         },
         async drawCanvas() {
-            await this.$nextTick(); //等待界面刷新
-            await this.$nextTick();//节点有时候会先被撑大
+            //等待界面刷新后才能获得元素大小
+            await this.$nextTick();
 
-            this.calcBounds();
+            const draw = () => {
+                this.calcBounds();
 
-            if (this.tree) {
-                const board = document.querySelector("#board");
-                board.style.width = Math.max(board.parentElement.offsetWidth, this.tree.treeWidth + boardEdgeSpace * 2) + "px";
-                board.style.height = Math.max(board.parentElement.offsetHeight, this.tree.treeHeight + boardEdgeSpace * 2) + "px";
-            }
+                if (this.tree) {
+                    const board = document.querySelector("#board");
+                    board.style.width = Math.max(board.parentElement.offsetWidth, this.tree.treeWidth + boardEdgeSpace * 2) + "px";
+                    board.style.height = Math.max(board.parentElement.offsetHeight, this.tree.treeHeight + boardEdgeSpace * 2) + "px";
+                }
 
-            this.alignTree();
-            this.drawLines();
+                this.alignTree();
+                this.drawLines();
+            };
+
+            draw();
+
+            //节点有时候会先被撑大再还原导致calcBounds不准确，延时再执行一次
+            await this.$nextTick();
+            draw();
         },
         calcBounds(node = this.tree) {
             if (!node) {
