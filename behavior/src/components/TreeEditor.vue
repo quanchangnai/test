@@ -231,7 +231,7 @@ export default {
                     if (child.dragging) {
                         context.strokeStyle = "red"
                     } else {
-                        context.strokeStyle = "blue"
+                        context.strokeStyle = "#274ff6"
                     }
                     drawLine(x1, y1, x2, y2);
                     lineToChildren(child);

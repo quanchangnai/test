@@ -1,10 +1,11 @@
 <template>
-    <el-table :data="visibleTrees"
+    <el-table border
               ref="table"
               size="medium"
+              :height="'100%'"
+              :data="visibleTrees"
               highlight-current-row
-              @current-change="onTreeSelect"
-              stripe border>
+              @current-change="onTreeSelect">
         <el-table-column>
             <template #header>
                 <el-input v-model="keyword"

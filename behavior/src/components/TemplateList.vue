@@ -1,5 +1,8 @@
 <template>
-    <el-table :data="visibleTemplates" size="medium" stripe border>
+    <el-table border
+              size="medium"
+              :height="'100%'"
+              :data="visibleTemplates">
         <el-table-column>
             <template #header>
                 <el-input v-model="keyword"
@@ -47,8 +50,5 @@ export default {
 </script>
 
 <style scoped>
-/*noinspection CssUnusedSymbol*/
-.el-table {
-    height: 100%;
-}
+
 </style>

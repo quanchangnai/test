@@ -27,15 +27,17 @@
                     </div>
                 </template>
             </div>
-            <div class="detail-icon"
+            <div @mousedown.stop
+                 @click="onDetail"
+                 class="detail-icon"
                  :class="node.detailed?'el-icon-arrow-up':'el-icon-arrow-down'"
-                 @mousedown.stop
-                 @click="onDetail"/>
+                 :title="this.node.detailed ? '收起节点' : '展开节点'"/>
             <div v-if="node.children&&node.children.length"
+                 @mousedown.stop
+                 @click="onCollapse"
                  class="collapse-icon"
                  :class="node.collapsed?'el-icon-circle-plus-outline':'el-icon-remove-outline'"
-                 @mousedown.stop
-                 @click="onCollapse"/>
+                 :title="this.node.collapsed ? '展开子树' : '收起子树'"/>
             <context-menu ref="contextMenu" :items="menuItems"/>
         </template>
     </draggable>
@@ -61,11 +63,13 @@ export default {
     computed: {
         menuItems() {
             let items = [];
-            items.push({title: this.node.detailed ? '隐藏详情' : '显示详情', handler: this.onDetail});
+            items.push({title: this.node.detailed ? '收起节点' : '展开节点', handler: this.onDetail});
             if (this.node.children && this.node.children.length) {
                 items.push({title: this.node.collapsed ? '展开子树' : '收起子树', handler: this.onCollapse});
             }
-            items.push({title: '删除节点', handler: this.onDelete});
+            if (this.node.parent) {
+                items.push({title: '删除节点', handler: this.onDelete});
+            }
             return items;
         }
     },
