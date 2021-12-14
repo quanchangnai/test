@@ -36,10 +36,7 @@
                  :class="node.collapsed?'el-icon-circle-plus-outline':'el-icon-remove-outline'"
                  @mousedown.stop
                  @click="onCollapse"/>
-            <context-menu
-                ref="contextMenu"
-                :items="menuItems"
-                @item-click="onContextMenuItemClick"/>
+            <context-menu ref="contextMenu" :items="menuItems"/>
         </template>
     </draggable>
 </template>
@@ -64,15 +61,18 @@ export default {
     computed: {
         menuItems() {
             let items = [];
-            items.push(this.node.detailed ? '隐藏详情' : '显示详情');
-            items.push('删除节点');
+            items.push({title: this.node.detailed ? '隐藏详情' : '显示详情', handler: this.onDetail});
             if (this.node.children && this.node.children.length) {
-                items.push(this.node.collapsed ? '展开子树' : '收起子树');
+                items.push({title: this.node.collapsed ? '展开子树' : '收起子树', handler: this.onCollapse});
             }
+            items.push({title: '删除节点', handler: this.onDelete});
             return items;
         }
     },
     methods: {
+        content() {
+            return this.$refs.content;
+        },
         onDragStart() {
             this.node.dragging = true;
             this.$emit("drag-start", {node: this.node});
@@ -107,20 +107,11 @@ export default {
             this.$set(this.node, "collapsed", !this.node.collapsed);
             this.$emit("collapse");
         },
-        content() {
-            return this.$refs.content;
+        onDelete() {
+            this.$emit("delete", this.node);
         },
         onContextMenu(event) {
             this.$refs.contextMenu.show(event.clientX, event.clientY);
-        },
-        onContextMenuItemClick(item) {
-            if (item === 0) {
-                this.onDetail();
-            } else if (item === 1) {
-                this.$emit("delete", this.node);
-            } else if (item === 2) {
-                this.onCollapse();
-            }
         }
     }
 

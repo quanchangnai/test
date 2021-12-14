@@ -9,8 +9,8 @@
         <div v-for="(item,index) in items"
              :key="'item'+index"
              class="context-menu-item"
-             @click="()=>onItemClick(index)">
-            {{ item }}
+             @click="()=>onItemClick(item)">
+            {{ item.title }}
         </div>
     </div>
 </template>
@@ -21,9 +21,9 @@ export default {
     name: "ContextMenu",
     props: {
         items: {
-            type: [],
+            type: Array,
             default: function () {
-                return ["测试1", "测试2"]
+                return [{title: "测试1", handler: null}, {title: "测试2", handler: null}]
             }
         }
     },
@@ -41,7 +41,8 @@ export default {
             this.x = x;
             this.y = y;
             window.addEventListener("mousedown", this.tryHide, {capture: true});
-            window.addEventListener("resize", this.hide, {once: true});
+            window.addEventListener("resize", this.hide);
+            window.addEventListener("scroll", this.hide);
         },
         tryHide() {
             if (!this.mouseover) {
@@ -51,10 +52,14 @@ export default {
         hide() {
             this.visible = false;
             window.removeEventListener("mousedown", this.tryHide);
+            window.removeEventListener("resize", this.hide);
+            window.removeEventListener("scroll", this.hide);
         },
-        onItemClick(index) {
+        onItemClick(item) {
             this.hide();
-            this.$emit("item-click", index);
+            if (item.handler != null) {
+                item.handler.call(item);
+            }
         }
     }
 }
@@ -69,16 +74,14 @@ export default {
     line-height: 25px;
     user-select: none;
     cursor: pointer;
-    border: solid #dadce0 1px;
-    background-color: #ecf5ff;
+    background-color: #bcdaf8;
 }
 
 .context-menu-item {
-    padding-left: 10px;
-    padding-right: 10px;
+    padding: 0 10px;
 }
 
 .context-menu-item:hover {
-    background-color: #88bef5;
+    background-color: #72b3f5;
 }
 </style>
