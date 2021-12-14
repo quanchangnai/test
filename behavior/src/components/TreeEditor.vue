@@ -1,21 +1,7 @@
 <template>
     <div id="container">
         <div id="left">
-            <el-table :data="trees"
-                      ref="treesTable"
-                      size="medium"
-                      highlight-current-row
-                      @current-change="onTreeSelect"
-                      stripe border>
-                <el-table-column>
-                    <template #header>
-                        <el-input clearable size="medium" placeholder="输入关键字搜索" prefix-icon="el-icon-search"/>
-                    </template>
-                    <template #default="{row}">
-                        <div> {{ row.id }}:{{ row.name }}</div>
-                    </template>
-                </el-table-column>
-            </el-table>
+            <tree-list @tree-select="onTreeSelect"/>
         </div>
         <div id="center">
             <draggable id="board"
@@ -37,16 +23,7 @@
             </draggable>
         </div>
         <div id="right">
-            <el-table :data="templates" size="medium" stripe border>
-                <el-table-column>
-                    <template #header>
-                        <el-input clearable size="medium" placeholder="输入关键字搜索" prefix-icon="el-icon-search"/>
-                    </template>
-                    <template #default="{row}">
-                        <div style="cursor: grab;user-select: none;" @mousedown="e=>onTemplateSelect(e,row.id)"> {{ row.name }}</div>
-                    </template>
-                </el-table-column>
-            </el-table>
+            <template-list @template-select="onTemplateSelect"/>
         </div>
         <tree-node v-if="tempNode!=null"
                    :ref="'node'+tempNode.id"
@@ -59,7 +36,9 @@
 
 <script>
 import Draggable from "./Draggable";
+import TreeList from "./TreeList";
 import TreeNode from "./TreeNode";
+import TemplateList from "./TemplateList";
 import utils from "../utils";
 import {ipcRenderer} from 'electron'
 
@@ -69,13 +48,9 @@ const boardEdgeSpace = 100;//画板边缘空间
 
 export default {
     name: "TreeEditor",
-    components: {TreeNode, Draggable},
-    async created() {
+    components: {Draggable, TreeNode, TreeList, TemplateList},
+    async mounted() {
         this.templates = await ipcRenderer.invoke("load-templates");
-        this.trees = await ipcRenderer.invoke("load-trees");
-        this.tree = this.trees[0];
-        this.$refs.treesTable.setCurrentRow(this.tree);
-        await this.drawCanvas();
         window.addEventListener("resize", this.drawCanvas);
     },
     destroyed() {
@@ -132,7 +107,7 @@ export default {
             await this.$nextTick();
 
             const draw = () => {
-                this.calcBounds();
+                this.calcBounds(this.tree);
 
                 if (this.tree) {
                     const board = document.querySelector("#board");
@@ -140,7 +115,7 @@ export default {
                     board.style.height = Math.max(board.parentElement.offsetHeight, this.tree.treeHeight + boardEdgeSpace * 2) + "px";
                 }
 
-                this.alignTree();
+                this.alignTree(this.tree, boardEdgeSpace);
                 this.drawLines();
             };
 
@@ -150,7 +125,7 @@ export default {
             await this.$nextTick();
             draw();
         },
-        calcBounds(node = this.tree) {
+        calcBounds(node) {
             if (!node) {
                 return;
             }
@@ -188,7 +163,7 @@ export default {
             node.treeHeight = Math.max(node.selfHeight, childrenHeight);
             node.childrenHeight = childrenHeight;
         },
-        alignTree(node = this.tree, lastY = boardEdgeSpace) {
+        alignTree(node, lastY) {
             if (!node) {
                 return;
             }
@@ -287,11 +262,7 @@ export default {
             this.saveTree();
         },
         onNodeDelete(node) {
-            if (node === this.tree) {
-                this.tree = null;
-            } else {
-                node.parent.children.splice(node.parent.children.indexOf(node), 1);
-            }
+            node.parent.children.splice(node.parent.children.indexOf(node), 1);
             this.drawCanvas();
         },
         linkParentNode(node, parentNode) {
@@ -332,27 +303,27 @@ export default {
                 deltaY = this.boardY;
             }
 
-            let x = node.x;
-            let y = node.y + (node.selfHeight - nodeSpaceY) / 2;
+            let x1 = node.x;
+            let y1 = node.y + (node.selfHeight - nodeSpaceY) / 2;
 
             //寻找最近的的节点作为父节点
-            let nearestNode = null;
+            let parentNode = null;
             let minDistance = -1;
 
-            const find = node0 => {
-                if (!node0 || node0 === node || node0.collapsed) {
+            const find = targetNode => {
+                if (!targetNode || targetNode === node || targetNode.collapsed) {
                     return;
                 }
-                let x0 = deltaX + node0.x + node0.selfWidth - nodeSpaceX;
-                let y0 = deltaY + node0.y + (node0.selfHeight - nodeSpaceY) / 2;
+                let x2 = deltaX + targetNode.x + targetNode.selfWidth - nodeSpaceX;
+                let y2 = deltaY + targetNode.y + (targetNode.selfHeight - nodeSpaceY) / 2;
 
-                let distance = (x - x0) ** 2 + (y - y0) ** 2;
+                let distance = (x1 - x2) ** 2 + (y1 - y2) ** 2;
                 if (minDistance < 0 || distance < minDistance) {
                     minDistance = distance;
-                    nearestNode = node0;
+                    parentNode = targetNode;
                 }
-                if (node0.children) {
-                    for (let child of node0.children) {
+                if (targetNode.children) {
+                    for (let child of targetNode.children) {
                         find(child);
                     }
                 }
@@ -360,7 +331,7 @@ export default {
 
             find(this.tree);
 
-            return nearestNode;
+            return parentNode;
         },
         saveTree() {
             let build = node => {
@@ -380,7 +351,8 @@ export default {
             this.boardX = event.x;
             this.boardY = event.y;
 
-            await this.$nextTick();//等待this.boardX修改生效
+            //等待boardX、boardY修改生效
+            await this.$nextTick();
 
             //如果拖出界了就拉回到初始位置
             let board = document.querySelector("#board");
@@ -413,11 +385,13 @@ export default {
             await this.drawCanvas();
             this.saveTree();
         },
-        onTemplateSelect(event, tid) {
+        onTemplateSelect(event) {
             let container = document.querySelector("#container");
-            let x = event.clientX - utils.getClientX(container);
-            let y = event.clientY - utils.getClientY(container);
-            this.tempNode = {id: ++this.maxNodeId, tid: tid, x, y, collapsed: false};
+            let x = event.x - utils.getClientX(container);
+            let y = event.y - utils.getClientY(container);
+            let tid = event.template.id;
+
+            this.tempNode = {id: ++this.maxNodeId, tid, x, y, collapsed: false};
 
             this.$nextTick(() => {
                 let tempNodeContent = this.$refs["node" + this.tempNode.id].content();
@@ -450,11 +424,6 @@ export default {
     height: 100%;
     right: 0;
     user-select: none;
-}
-
-/*noinspection CssUnusedSymbol*/
-.el-table {
-    height: 100%;
 }
 
 #center {
