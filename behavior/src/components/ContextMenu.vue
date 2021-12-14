@@ -78,7 +78,7 @@ export default {
 }
 
 .context-menu-item {
-    padding: 0 10px;
+    padding: 1px 12px;
 }
 
 .context-menu-item:hover {

@@ -12,11 +12,11 @@
                 tid:{{ node.tid }},id:{{ node.id }}
             </div>
             <div v-else class="content" ref="content">
-                <div style="padding-right: 5px">
+                <div>
                     <span>节点:{{ node.tid }}-{{ node.id }}</span>
                 </div>
                 <template v-if="node.detailed">
-                    <div style="border-top: solid cadetblue 1px;">
+                    <div>
                         参数1:aaaaaaaaa{{ node.id }}
                     </div>
                     <div>
@@ -129,9 +129,17 @@ export default {
     line-height: 30px;
     border: 1px solid #98a5e9;
     border-radius: 5px;
-    padding: 0 10px 0 23px;
     z-index: 10;
 }
+
+.content div {
+    padding: 0 12px 0 23px;
+}
+
+.content div:nth-child(2) {
+    border-top: solid cadetblue 1px;
+}
+
 
 .content:hover {
     cursor: grab;

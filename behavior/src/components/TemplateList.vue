@@ -2,7 +2,8 @@
     <el-table border
               size="medium"
               :height="'100%'"
-              :data="visibleTemplates">
+              :data="visibleTemplates"
+              :cell-style="{padding:0}">
         <el-table-column>
             <template #header>
                 <el-input v-model="keyword"
@@ -12,7 +13,7 @@
                           prefix-icon="el-icon-search"/>
             </template>
             <template #default="{row}">
-                <div style="cursor: grab;user-select: none;" @mousedown="e=>onTemplateSelect(e,row)"> {{ row.name }}</div>
+                <div class="template" @mousedown="e=>onTemplateSelect(e,row)"> {{ row.name }}</div>
             </template>
         </el-table-column>
     </el-table>
@@ -50,5 +51,9 @@ export default {
 </script>
 
 <style scoped>
-
+.template {
+    padding: 10px 0;
+    cursor: grab;
+    user-select: none;
+}
 </style>
