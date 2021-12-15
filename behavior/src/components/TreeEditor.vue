@@ -17,8 +17,8 @@
                            :node="node"
                            @dragging="onNodeDragging"
                            @drag-end="onNodeDragEnd"
-                           @detail="drawCanvas"
-                           @collapse="drawCanvas"
+                           @detail="drawTree"
+                           @collapse="drawTree"
                            @delete="onNodeDelete"/>
             </draggable>
         </div>
@@ -50,15 +50,13 @@ export default {
     name: "TreeEditor",
     components: {Draggable, TreeNode, TreeList, TemplateList},
     async mounted() {
-        this.templates = await ipcRenderer.invoke("load-templates");
-        window.addEventListener("resize", this.drawCanvas);
+        window.addEventListener("resize", this.drawTree);
     },
     destroyed() {
-        window.removeEventListener("resize", this.drawCanvas);
+        window.removeEventListener("resize", this.drawTree);
     },
     data() {
         return {
-            templates: null,
             trees: null,
             tree: null,
             maxNodeId: 0,
@@ -100,14 +98,14 @@ export default {
         onTreeSelect(tree) {
             this.tree = tree;
             this.maxNodeId = 0;
-            this.drawCanvas();
+            this.drawTree();
         },
-        async drawCanvas() {
+        async drawTree() {
             //等待界面刷新后才能获得元素大小
             await this.$nextTick();
 
             const draw = () => {
-                this.calcBounds(this.tree);
+                this.calcNodeBounds(this.tree);
 
                 if (this.tree) {
                     const board = document.querySelector("#board");
@@ -115,17 +113,17 @@ export default {
                     board.style.height = Math.max(board.parentElement.offsetHeight, this.tree.treeHeight + boardEdgeSpace * 2) + "px";
                 }
 
-                this.alignTree(this.tree, boardEdgeSpace);
-                this.drawLines();
+                this.calcNodePosition(this.tree, boardEdgeSpace);
+                this.drawLinkLines();
             };
 
             draw();
 
-            //节点有时候会先被撑大再还原导致calcBounds不准确，延时再执行一次
+            //节点有时候会先被撑大再还原导致calcNodeBounds不准确，延时再执行一次
             await this.$nextTick();
             draw();
         },
-        calcBounds(node) {
+        calcNodeBounds(node) {
             if (!node) {
                 return;
             }
@@ -152,7 +150,7 @@ export default {
             let childrenHeight = 0;
 
             for (let child of node.children) {
-                this.calcBounds(child);
+                this.calcNodeBounds(child);
                 if (child.treeWidth > maxChildWidth) {
                     maxChildWidth = child.treeWidth;
                 }
@@ -163,7 +161,7 @@ export default {
             node.treeHeight = Math.max(node.selfHeight, childrenHeight);
             node.childrenHeight = childrenHeight;
         },
-        alignTree(node, lastY) {
+        calcNodePosition(node, lastY) {
             if (!node) {
                 return;
             }
@@ -180,7 +178,7 @@ export default {
 
             if (node.treeHeight <= node.childrenHeight) {
                 for (let child of node.children) {
-                    this.alignTree(child, lastY);
+                    this.calcNodePosition(child, lastY);
                     lastY += child.treeHeight;
                 }
                 if (node.children.length > 1) {
@@ -194,12 +192,12 @@ export default {
                 node.y = lastY;
                 lastY += (node.selfHeight - node.childrenHeight) / 2;
                 for (let child of node.children) {
-                    this.alignTree(child, lastY);
+                    this.calcNodePosition(child, lastY);
                     lastY += child.treeHeight;
                 }
             }
         },
-        drawLines() {
+        drawLinkLines() {
             const canvas = document.querySelector("#canvas");
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
@@ -255,15 +253,15 @@ export default {
         },
         onNodeDragging(node) {
             this.linkParentNode(node);
-            this.drawLines();
+            this.drawLinkLines();
         },
         async onNodeDragEnd() {
-            await this.drawCanvas();
+            await this.drawTree();
             this.saveTree();
         },
         onNodeDelete(node) {
             node.parent.children.splice(node.parent.children.indexOf(node), 1);
-            this.drawCanvas();
+            this.drawTree();
         },
         linkParentNode(node, parentNode) {
             if (parentNode == null) {
@@ -382,7 +380,7 @@ export default {
                 this.tree = tempNode;
             }
 
-            await this.drawCanvas();
+            await this.drawTree();
             this.saveTree();
         },
         onTemplateSelect(event) {
@@ -397,14 +395,14 @@ export default {
                 let tempNodeContent = this.$refs["node" + this.tempNode.id].content();
                 this.tempNode.x -= tempNodeContent.offsetWidth / 2;
                 this.tempNode.y -= tempNodeContent.offsetHeight / 2;
-                this.calcBounds(this.tempNode);
+                this.calcNodeBounds(this.tempNode);
                 this.linkParentNode(this.tempNode);
-                this.drawLines();
+                this.drawLinkLines();
             });
 
             window.addEventListener("mouseup", () => {
                 this.tempNode = null;
-                this.drawLines();
+                this.drawLinkLines();
             }, {once: true});
         }
     }

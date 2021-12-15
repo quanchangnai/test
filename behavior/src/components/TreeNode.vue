@@ -38,7 +38,7 @@
                  class="collapse-icon"
                  :class="node.collapsed?'el-icon-circle-plus-outline':'el-icon-remove-outline'"
                  :title="this.node.collapsed ? '展开子树' : '收起子树'"/>
-            <context-menu ref="contextMenu" :items="menuItems"/>
+            <context-menu ref="menu" :items="menuItems"/>
         </template>
     </draggable>
 </template>
@@ -85,17 +85,17 @@ export default {
             const deltaX = event.x - this.node.x;
             const deltaY = event.y - this.node.y;
 
-            const move = node0 => {
-                node0.x += deltaX;
-                node0.y += deltaY;
-                if (node0.children) {
-                    for (let child of node0.children) {
-                        move(child);
+            const moveNode = node => {
+                node.x += deltaX;
+                node.y += deltaY;
+                if (node.children) {
+                    for (let child of node.children) {
+                        moveNode(child);
                     }
                 }
             };
 
-            move(this.node);
+            moveNode(this.node);
 
             this.$emit("dragging", this.node);
         },
@@ -115,7 +115,7 @@ export default {
             this.$emit("delete", this.node);
         },
         onContextMenu(event) {
-            this.$refs.contextMenu.show(event.clientX, event.clientY);
+            this.$refs.menu.show(event.clientX, event.clientY);
         }
     }
 
